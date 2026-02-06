@@ -7,6 +7,7 @@ import { env } from "../config/env.js";
 import { parseActor } from "../utils/actor.js";
 import { assertActorInAppointment } from "../services/appointmentService.js";
 import { createFileMessage, createTextMessage, listMessages } from "../services/chatService.js";
+import { getReadsByAppointmentId, updateLastRead } from "../services/chatReadService.js";
 
 export function createChatRouter({ io }) {
   const router = Router();
@@ -100,6 +101,43 @@ export function createChatRouter({ io }) {
 
     const base = env.uploads.publicBaseUrl || `http://localhost:${env.port}`;
     res.json({ message, publicUrl: `${base}${urlPath}` });
+  });
+
+  // POST /api/chat/read
+  // body: { appointmentId, lastReadMessageId }
+  // role + actorId come from parseActor (prototype)
+  router.post("/read", async (req, res) => {
+    const actor = parseActor(req);
+    if (!actor.ok) return res.status(400).json({ error: actor.error });
+
+    const appointmentId = Number(req.body.appointmentId);
+    const lastReadMessageId = Number(req.body.lastReadMessageId);
+
+    if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
+    if (!lastReadMessageId) return res.status(400).json({ error: "lastReadMessageId required" });
+
+    const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
+    if (!allowed.ok) return res.status(allowed.status).json({ error: allowed.error });
+
+    const reads = await updateLastRead({ appointmentId, role: actor.role, lastReadMessageId });
+
+    io.to(roomName(appointmentId)).emit("read:updated", { appointmentId, reads });
+    res.json({ ok: true, reads });
+  });
+
+  // GET /api/chat/read?appointmentId=1&role=therapist&actorId=... (optional helper)
+  router.get("/read", async (req, res) => {
+    const actor = parseActor(req);
+    if (!actor.ok) return res.status(400).json({ error: actor.error });
+
+    const appointmentId = Number(req.query.appointmentId);
+    if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
+
+    const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
+    if (!allowed.ok) return res.status(allowed.status).json({ error: allowed.error });
+
+    const reads = await getReadsByAppointmentId(appointmentId);
+    res.json({ reads });
   });
 
   return router;
