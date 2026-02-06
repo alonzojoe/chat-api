@@ -79,6 +79,16 @@ export async function listAppointmentsForActor({ role, actorId }) {
   );
 }
 
+export async function updateAppointmentStatusByMongoId({ appointmentMongoId, status }) {
+  const result = await query(
+    `update appointments
+     set status=:status
+     where appointment_id=:appointmentMongoId`,
+    { appointmentMongoId, status }
+  );
+  return { affectedRows: result.affectedRows };
+}
+
 export async function createAppointment({ appointmentMongoId, patientId, patientName, therapistId, therapistName, startsAt }) {
   const result = await query(
     `insert into appointments (appointment_id, patient_id, patient_name, therapist_id, therapist_name, starts_at, status)

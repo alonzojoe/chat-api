@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { parseActor } from "../utils/actor.js";
-import { createAppointment, listAppointmentsForActor } from "../services/appointmentService.js";
+import { createAppointment, listAppointmentsForActor, updateAppointmentStatusByMongoId } from "../services/appointmentService.js";
 
 export const appointmentsRouter = Router();
 
@@ -40,4 +40,26 @@ appointmentsRouter.post("/", async (req, res) => {
   });
 
   res.json({ ok: true, ...result });
+});
+
+// PATCH /api/appointments/status
+// body: { appointmentId, status }
+// appointmentId = MongoDB appointment id stored in appointments.appointment_id
+appointmentsRouter.patch("/status", async (req, res) => {
+  const appointmentMongoId = (req.body.appointmentId || "").toString();
+  const status = (req.body.status || "").toString();
+
+  if (!appointmentMongoId.trim()) return res.status(400).json({ error: "appointmentId required" });
+  if (!status.trim()) return res.status(400).json({ error: "status required" });
+
+  // keep it simple: allow a small set (extend anytime)
+  const allowed = ["booked", "completed", "cancelled", "canceled", "no_show", "noshow"];
+  if (!allowed.includes(status)) {
+    return res.status(400).json({ error: `invalid status. allowed: ${allowed.join(", ")}` });
+  }
+
+  const result = await updateAppointmentStatusByMongoId({ appointmentMongoId: appointmentMongoId.trim(), status });
+  if (!result.affectedRows) return res.status(404).json({ error: "appointment not found" });
+
+  res.json({ ok: true });
 });
