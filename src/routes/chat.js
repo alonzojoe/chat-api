@@ -3,27 +3,32 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { env } from "../config/env.js";
+import { env, isProduction } from "../config/env.js";
 import { parseActor } from "../utils/actor.js";
 import { assertActorInAppointment } from "../services/appointmentService.js";
 import { createFileMessage, createTextMessage, listMessages } from "../services/chatService.js";
 import { getReadsByAppointmentId, updateLastRead } from "../services/chatReadService.js";
+import { uploadBufferToCloudinary } from "../services/cloudinary.js";
 
 export function createChatRouter({ io }) {
   const router = Router();
 
   // upload
   const uploadDir = path.resolve(process.cwd(), env.uploads.dir);
-  fs.mkdirSync(uploadDir, { recursive: true });
+  if (!isProduction) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
 
-  const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadDir),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname || "");
-      const name = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
-      cb(null, name);
-    },
-  });
+  const storage = isProduction
+    ? multer.memoryStorage()
+    : multer.diskStorage({
+        destination: (_req, _file, cb) => cb(null, uploadDir),
+        filename: (_req, file, cb) => {
+          const ext = path.extname(file.originalname || "");
+          const name = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
+          cb(null, name);
+        },
+      });
 
   const upload = multer({
     storage,
@@ -86,21 +91,40 @@ export function createChatRouter({ io }) {
     const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
     if (!allowed.ok) return res.status(allowed.status).json({ error: allowed.error });
 
-    const urlPath = `/uploads/${req.file.filename}`;
+    let fileUrl = "";
+    let publicUrl = "";
+
+    if (isProduction) {
+      if (!env.cloudinary.cloudName || !env.cloudinary.apiKey || !env.cloudinary.apiSecret) {
+        return res.status(500).json({ error: "Cloudinary env vars not set" });
+      }
+
+      const result = await uploadBufferToCloudinary({
+        buffer: req.file.buffer,
+        filename: req.file.originalname,
+      });
+
+      fileUrl = result.secure_url;
+      publicUrl = result.secure_url;
+    } else {
+      const urlPath = `/uploads/${req.file.filename}`;
+      const base = env.uploads.publicBaseUrl || `http://localhost:${env.port}`;
+      fileUrl = urlPath;
+      publicUrl = `${base}${urlPath}`;
+    }
 
     const message = await createFileMessage({
       appointmentId,
       senderRole: actor.role,
       senderId: actor.actorId,
-      fileUrl: urlPath,
+      fileUrl,
       fileName: req.file.originalname,
       fileType: req.file.mimetype,
     });
 
     io.to(roomName(appointmentId)).emit("message:new", { message });
 
-    const base = env.uploads.publicBaseUrl || `http://localhost:${env.port}`;
-    res.json({ message, publicUrl: `${base}${urlPath}` });
+    res.json({ message, publicUrl });
   });
 
   // POST /api/chat/read

@@ -1,8 +1,9 @@
 import "dotenv/config";
 
 export const env = {
+  nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 4000),
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:3000",
 
   db: {
     host: process.env.DB_HOST || "127.0.0.1",
@@ -17,4 +18,12 @@ export const env = {
     publicBaseUrl: (process.env.PUBLIC_BASE_URL || "").replace(/\/$/, ""),
     maxFileSizeBytes: 15 * 1024 * 1024,
   },
+
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+    apiKey: process.env.CLOUDINARY_API_KEY || "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || "",
+  },
 };
+
+export const isProduction = env.nodeEnv === "production";
