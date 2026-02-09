@@ -13,14 +13,6 @@ export function getPool() {
       database: env.db.name,
       connectionLimit: 10,
       namedPlaceholders: true,
-      ...(env.db.ssl
-        ? {
-            ssl: {
-              rejectUnauthorized: true,
-              ...(env.db.sslCa ? { ca: env.db.sslCa } : {}),
-            },
-          }
-        : {}),
     });
   }
   return pool;

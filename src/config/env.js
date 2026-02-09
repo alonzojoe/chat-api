@@ -11,8 +11,6 @@ export const env = {
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
     name: process.env.DB_NAME || "chat_db",
-    ssl: String(process.env.DB_SSL || "").toLowerCase() === "true",
-    sslCa: process.env.DB_SSL_CA || "",
   },
 
   uploads: {
