@@ -1,24 +1,13 @@
-import mysql from "mysql2/promise";
+import mongoose from "mongoose";
 import { env } from "./env.js";
 
-let pool;
+let connected = false;
 
-export function getPool() {
-  if (!pool) {
-    pool = mysql.createPool({
-      host: env.db.host,
-      port: env.db.port,
-      user: env.db.user,
-      password: env.db.password,
-      database: env.db.name,
-      connectionLimit: 10,
-      namedPlaceholders: true,
-    });
-  }
-  return pool;
-}
-
-export async function query(sql, params = {}) {
-  const [rows] = await getPool().execute(sql, params);
-  return rows;
+export async function connectDb() {
+  if (connected) return;
+  mongoose.set("strictQuery", true);
+  await mongoose.connect(env.mongo.uri, {
+    autoIndex: true,
+  });
+  connected = true;
 }
