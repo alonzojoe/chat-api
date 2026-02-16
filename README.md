@@ -3,7 +3,7 @@
 Prototype 1:1 **appointment chat** (patient ↔ therapist) with **files**.
 
 - Node.js + Express
-- MySQL (XAMPP)
+- MySQL (XAMPP) (To be rework to No-SQL database (mongoDB))
 - Socket.IO realtime
 - Uploads stored locally in `uploads/`
 
@@ -109,7 +109,3 @@ Client emits:
 Server emits:
 - `joined` `{ appointmentId }`
 - `message:new` `{ message }`
-
-## Next step
-
-When you're ready, we replace the prototype actor parsing with JWT auth and remove `role/actorId` from client input.
