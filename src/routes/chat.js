@@ -38,7 +38,7 @@ export function createChatRouter({ io }) {
     const actor = parseActor(req);
     if (!actor.ok) return res.status(400).json({ error: actor.error });
 
-    const appointmentId = Number(req.query.appointmentId);
+    const appointmentId = (req.query.appointmentId || "").toString();
     if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
 
     const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
@@ -53,7 +53,7 @@ export function createChatRouter({ io }) {
     const actor = parseActor(req);
     if (!actor.ok) return res.status(400).json({ error: actor.error });
 
-    const appointmentId = Number(req.body.appointmentId);
+    const appointmentId = (req.body.appointmentId || "").toString();
     const body = (req.body.body || "").toString();
 
     if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
@@ -78,7 +78,7 @@ export function createChatRouter({ io }) {
     const actor = parseActor(req);
     if (!actor.ok) return res.status(400).json({ error: actor.error });
 
-    const appointmentId = Number(req.body.appointmentId);
+    const appointmentId = (req.body.appointmentId || "").toString();
     if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
     if (!req.file) return res.status(400).json({ error: "file required" });
 
