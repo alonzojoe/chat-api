@@ -9,10 +9,10 @@ export function registerSockets(io) {
     socket.on("join", async ({ appointmentId, role, actorId }) => {
       const id = (appointmentId || "").toString();
       const actorRole = (role || "").toString();
-      const actorNum = Number(actorId);
-      if (!id || !["patient", "therapist"].includes(actorRole) || !actorNum) return;
+      const actorStr = (actorId || "").toString();
+      if (!id || !["patient", "therapist"].includes(actorRole) || !actorStr.trim()) return;
 
-      const allowed = await assertActorInAppointment({ appointmentId: id, role: actorRole, actorId: actorNum });
+      const allowed = await assertActorInAppointment({ appointmentId: id, role: actorRole, actorId: actorStr.trim() });
       if (!allowed.ok) return;
 
       socket.join(appointmentRoom(id));

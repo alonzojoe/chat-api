@@ -16,15 +16,15 @@ appointmentsRouter.get("/", async (req, res) => {
 // POST /api/appointments
 // { patientId, patientName, therapistId, therapistName, startsAt }
 appointmentsRouter.post("/", async (req, res) => {
-  const patientId = Number(req.body.patientId);
+  const patientId = (req.body.patientId || "").toString();
   const patientName = (req.body.patientName || "").toString();
-  const therapistId = Number(req.body.therapistId);
+  const therapistId = (req.body.therapistId || "").toString();
   const therapistName = (req.body.therapistName || "").toString();
   const startsAt = req.body.startsAt; // 'YYYY-MM-DD HH:mm:ss'
 
-  if (!patientId) return res.status(400).json({ error: "patientId required" });
+  if (!patientId.trim()) return res.status(400).json({ error: "patientId required" });
   if (!patientName.trim()) return res.status(400).json({ error: "patientName required" });
-  if (!therapistId) return res.status(400).json({ error: "therapistId required" });
+  if (!therapistId.trim()) return res.status(400).json({ error: "therapistId required" });
   if (!therapistName.trim()) return res.status(400).json({ error: "therapistName required" });
   if (!startsAt) return res.status(400).json({ error: "startsAt required" });
 

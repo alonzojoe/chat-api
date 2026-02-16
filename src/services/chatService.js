@@ -15,7 +15,7 @@ function toMessageDto(doc) {
     id: doc._id.toString(),
     appointmentId: doc.appointmentId.toString(),
     senderRole: doc.senderRole,
-    senderId: doc.senderId,
+    senderId: doc.senderId?.toString() || "",
     body: doc.body,
     fileUrl: doc.fileUrl,
     fileName: doc.fileName,
@@ -43,7 +43,7 @@ export async function createTextMessage({ appointmentId, senderRole, senderId, b
   const message = await Message.create({
     appointmentId,
     senderRole,
-    senderId,
+    senderId: senderId.toString(),
     body,
   });
   return getMessageById(message._id.toString());
@@ -53,7 +53,7 @@ export async function createFileMessage({ appointmentId, senderRole, senderId, f
   const message = await Message.create({
     appointmentId,
     senderRole,
-    senderId,
+    senderId: senderId.toString(),
     fileUrl,
     fileName,
     fileType,

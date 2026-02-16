@@ -4,7 +4,7 @@ const MessageSchema = new mongoose.Schema(
   {
     appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment", required: true },
     senderRole: { type: String, enum: ["patient", "therapist"], required: true },
-    senderId: { type: Number, required: true },
+    senderId: { type: String, required: true },
     body: { type: String, default: null },
     fileUrl: { type: String, default: null },
     fileName: { type: String, default: null },

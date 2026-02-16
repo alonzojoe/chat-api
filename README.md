@@ -66,7 +66,7 @@ Health:
 
 Because this is a prototype (no auth middleware yet), we pass `role` and `actorId` in query/body.
 
-> Note: `appointmentId` is now a MongoDB ObjectId string.
+> Note: `appointmentId` and `actorId` are strings (MongoDB ObjectId / external ids).
 
 ### List appointments (sidebar)
 

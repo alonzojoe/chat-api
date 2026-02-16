@@ -20,8 +20,8 @@ export async function assertActorInAppointment({ appointmentId, role, actorId })
   if (!appt) return { ok: false, status: 404, error: "Appointment not found" };
 
   const allowed =
-    (role === "patient" && Number(appt.patientId) === actorId) ||
-    (role === "therapist" && Number(appt.therapistId) === actorId);
+    (role === "patient" && appt.patientId === actorId) ||
+    (role === "therapist" && appt.therapistId === actorId);
 
   if (!allowed) return { ok: false, status: 403, error: "Not allowed for this appointment" };
   return { ok: true, appointment: appt };
@@ -59,9 +59,9 @@ export async function listAppointmentsForActor({ role, actorId }) {
 
       return {
         appointmentId: row._id.toString(),
-        patientId: row.patientId,
+        patientId: row.patientId?.toString() || "",
         patientName: row.patientName,
-        therapistId: row.therapistId,
+        therapistId: row.therapistId?.toString() || "",
         therapistName: row.therapistName,
         startsAt: formatDate(row.startsAt),
         status: row.status,
@@ -79,9 +79,9 @@ export async function listAppointmentsForActor({ role, actorId }) {
 
 export async function createAppointment({ patientId, patientName, therapistId, therapistName, startsAt }) {
   const appointment = await Appointment.create({
-    patientId,
+    patientId: patientId.toString(),
     patientName,
-    therapistId,
+    therapistId: therapistId.toString(),
     therapistName,
     startsAt: new Date(startsAt),
     status: "booked",
