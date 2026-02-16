@@ -7,7 +7,7 @@ export function appointmentRoom(appointmentId) {
 export function registerSockets(io) {
   io.on("connection", (socket) => {
     socket.on("join", async ({ appointmentId, role, actorId }) => {
-      const id = Number(appointmentId);
+      const id = (appointmentId || "").toString();
       const actorRole = (role || "").toString();
       const actorStr = (actorId || "").toString();
       if (!id || !["patient", "therapist"].includes(actorRole) || !actorStr.trim()) return;

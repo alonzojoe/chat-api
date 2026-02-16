@@ -1,8 +1,16 @@
-import { query } from "../config/db.js";
+import { Appointment } from "../models/Appointment.js";
+import { Message } from "../models/Message.js";
+
+function formatDate(value) {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
 
 export async function getAppointmentById(appointmentId) {
-  const rows = await query(`select * from appointments where id=:appointmentId`, { appointmentId });
-  return rows[0] || null;
+  return Appointment.findOne({ appointmentId }).lean();
 }
 
 export async function assertActorInAppointment({ appointmentId, role, actorId }) {

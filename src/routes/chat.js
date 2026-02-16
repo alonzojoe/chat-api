@@ -39,8 +39,8 @@ export function createChatRouter({ io }) {
     const actor = parseActor(req);
     if (!actor.ok) return res.status(400).json({ error: actor.error });
 
-    const appointmentId = Number(req.query.appointmentId);
-    if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
+    const appointmentId = (req.query.appointmentId || "").toString();
+    if (!appointmentId.trim()) return res.status(400).json({ error: "appointmentId required" });
 
     const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
     if (!allowed.ok) return res.status(allowed.status).json({ error: allowed.error });
@@ -54,17 +54,17 @@ export function createChatRouter({ io }) {
     const actor = parseActor(req);
     if (!actor.ok) return res.status(400).json({ error: actor.error });
 
-    const appointmentId = Number(req.body.appointmentId);
+    const appointmentId = (req.body.appointmentId || "").toString();
     const body = (req.body.body || "").toString();
 
-    if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
+    if (!appointmentId.trim()) return res.status(400).json({ error: "appointmentId required" });
     if (!body.trim()) return res.status(400).json({ error: "body required" });
 
     const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
     if (!allowed.ok) return res.status(allowed.status).json({ error: allowed.error });
 
     const message = await createTextMessage({
-      appointmentId,
+      appointmentId: appointmentId.trim(),
       senderRole: actor.role,
       senderId: actor.actorId,
       body: body.trim(),
@@ -79,8 +79,8 @@ export function createChatRouter({ io }) {
     const actor = parseActor(req);
     if (!actor.ok) return res.status(400).json({ error: actor.error });
 
-    const appointmentId = Number(req.body.appointmentId);
-    if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
+    const appointmentId = (req.body.appointmentId || "").toString();
+    if (!appointmentId.trim()) return res.status(400).json({ error: "appointmentId required" });
     if (!req.file) return res.status(400).json({ error: "file required" });
 
     const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
@@ -89,7 +89,7 @@ export function createChatRouter({ io }) {
     const urlPath = `/uploads/${req.file.filename}`;
 
     const message = await createFileMessage({
-      appointmentId,
+      appointmentId: appointmentId.trim(),
       senderRole: actor.role,
       senderId: actor.actorId,
       fileUrl: urlPath,
