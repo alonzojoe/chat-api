@@ -3,7 +3,7 @@
 Prototype 1:1 **appointment chat** (patient ↔ therapist) with **files**.
 
 - Node.js + Express
-- MySQL (XAMPP) (To be rework to No-SQL database (mongoDB))
+- MongoDB (local)
 - Socket.IO realtime
 - Uploads stored locally in `uploads/`
 
@@ -27,7 +27,7 @@ chat-api/
       actor.js
     app.js
     server.js
-  db/
+  db/ (legacy MySQL files, unused)
     schema.sql
     seed.sql
   uploads/
@@ -35,14 +35,17 @@ chat-api/
   package.json
 ```
 
-## 1) Setup DB (XAMPP)
+## 1) Setup DB (MongoDB local)
 
-1. Start **Apache** + **MySQL** in XAMPP
-2. Create DB: `chat_db`
-3. Run SQL in `db/schema.sql`
-4. (Optional) Seed demo data with `db/seed.sql`
+1. Install MongoDB Community (Homebrew):
+   ```bash
+   brew tap mongodb/brew
+   brew install mongodb-community@7.0
+   brew services start mongodb-community@7.0
+   ```
+2. Default DB name used: `chat_db` (see `MONGO_URI` in `.env`)
 
-> Note: appointments now store `patient_name` and `therapist_name` for fast sidebar display in this prototype.
+> Note: appointments store `patientName` and `therapistName` for fast sidebar display in this prototype.
 
 ## 2) Configure env
 
@@ -63,6 +66,8 @@ Health:
 
 Because this is a prototype (no auth middleware yet), we pass `role` and `actorId` in query/body.
 
+> Note: `appointmentId` is now a MongoDB ObjectId string.
+
 ### List appointments (sidebar)
 
 Therapist:
@@ -80,7 +85,7 @@ curl "http://localhost:4000/api/appointments?role=patient&actorId=1"
 ### Load messages
 
 ```bash
-curl "http://localhost:4000/api/chat/messages?appointmentId=1&role=therapist&actorId=10"
+curl "http://localhost:4000/api/chat/messages?appointmentId=<appointmentId>&role=therapist&actorId=10"
 ```
 
 ### Send message
@@ -88,14 +93,14 @@ curl "http://localhost:4000/api/chat/messages?appointmentId=1&role=therapist&act
 ```bash
 curl -X POST http://localhost:4000/api/chat/message \
   -H 'Content-Type: application/json' \
-  -d '{"appointmentId":1,"role":"patient","actorId":1,"body":"Hello doc"}'
+  -d '{"appointmentId":"<appointmentId>","role":"patient","actorId":1,"body":"Hello doc"}'
 ```
 
 ### Upload file
 
 ```bash
 curl -X POST http://localhost:4000/api/chat/upload \
-  -F appointmentId=1 \
+  -F appointmentId=<appointmentId> \
   -F role=patient \
   -F actorId=1 \
   -F file=@/path/to/image.jpg
