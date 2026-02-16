@@ -66,7 +66,7 @@ Health:
 
 Because this is a prototype (no auth middleware yet), we pass `role` and `actorId` in query/body.
 
-> Note: `appointmentId` and `actorId` are strings (MongoDB ObjectId / external ids).
+> Note: `appointmentId` is an external ID (string) and is used to link messages. `actorId` is also a string.
 
 ### List appointments (sidebar)
 

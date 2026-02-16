@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const MessageSchema = new mongoose.Schema(
   {
-    appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment", required: true },
+    appointmentId: { type: String, required: true, index: true },
     senderRole: { type: String, enum: ["patient", "therapist"], required: true },
     senderId: { type: String, required: true },
     body: { type: String, default: null },

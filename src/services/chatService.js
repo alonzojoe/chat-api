@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { Message } from "../models/Message.js";
 
 function formatDate(value) {
@@ -25,7 +24,6 @@ function toMessageDto(doc) {
 }
 
 export async function listMessages({ appointmentId }) {
-  if (!mongoose.Types.ObjectId.isValid(appointmentId)) return [];
   const rows = await Message.find({ appointmentId })
     .sort({ createdAt: 1 })
     .limit(500)
@@ -34,7 +32,6 @@ export async function listMessages({ appointmentId }) {
 }
 
 export async function getMessageById(id) {
-  if (!mongoose.Types.ObjectId.isValid(id)) return null;
   const row = await Message.findById(id).lean();
   return toMessageDto(row);
 }

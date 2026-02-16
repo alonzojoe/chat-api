@@ -26,10 +26,9 @@ async function migrate() {
   const [appointments] = await mysqlConn.execute("select * from appointments");
   const [messages] = await mysqlConn.execute("select * from chat_messages");
 
-  const appointmentIdMap = new Map();
-
   for (const row of appointments) {
-    const doc = await Appointment.create({
+    await Appointment.create({
+      appointmentId: String(row.id),
       patientId: String(row.patient_id),
       patientName: row.patient_name,
       therapistId: String(row.therapist_id),
@@ -39,16 +38,12 @@ async function migrate() {
       createdAt: row.created_at || new Date(),
       updatedAt: row.created_at || new Date(),
     });
-    appointmentIdMap.set(Number(row.id), doc._id);
   }
 
   let migratedMessages = 0;
   for (const row of messages) {
-    const mappedId = appointmentIdMap.get(Number(row.appointment_id));
-    if (!mappedId) continue;
-
     await Message.create({
-      appointmentId: mappedId,
+      appointmentId: String(row.appointment_id),
       senderRole: row.sender_role,
       senderId: String(row.sender_id),
       body: row.body,

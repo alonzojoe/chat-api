@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { Appointment } from "../models/Appointment.js";
 import { Message } from "../models/Message.js";
 
@@ -11,8 +10,7 @@ function formatDate(value) {
 }
 
 export async function getAppointmentById(appointmentId) {
-  if (!mongoose.Types.ObjectId.isValid(appointmentId)) return null;
-  return Appointment.findById(appointmentId).lean();
+  return Appointment.findOne({ appointmentId }).lean();
 }
 
 export async function assertActorInAppointment({ appointmentId, role, actorId }) {
@@ -36,7 +34,7 @@ export async function listAppointmentsForActor({ role, actorId }) {
     {
       $lookup: {
         from: "messages",
-        let: { appointmentId: "$_id" },
+        let: { appointmentId: "$appointmentId" },
         pipeline: [
           { $match: { $expr: { $eq: ["$appointmentId", "$$appointmentId"] } } },
           { $sort: { createdAt: -1 } },
@@ -58,7 +56,7 @@ export async function listAppointmentsForActor({ role, actorId }) {
       else if (last?.fileUrl) lastMessage = "[Attachment]";
 
       return {
-        appointmentId: row._id.toString(),
+        appointmentId: row.appointmentId,
         patientId: row.patientId?.toString() || "",
         patientName: row.patientName,
         therapistId: row.therapistId?.toString() || "",
@@ -77,8 +75,9 @@ export async function listAppointmentsForActor({ role, actorId }) {
     });
 }
 
-export async function createAppointment({ patientId, patientName, therapistId, therapistName, startsAt }) {
+export async function createAppointment({ appointmentId, patientId, patientName, therapistId, therapistName, startsAt }) {
   const appointment = await Appointment.create({
+    appointmentId: appointmentId.toString(),
     patientId: patientId.toString(),
     patientName,
     therapistId: therapistId.toString(),
@@ -86,5 +85,5 @@ export async function createAppointment({ patientId, patientName, therapistId, t
     startsAt: new Date(startsAt),
     status: "booked",
   });
-  return { appointmentId: appointment._id.toString() };
+  return { appointmentId: appointment.appointmentId };
 }
