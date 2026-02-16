@@ -1,8 +1,18 @@
-import { query } from "../config/db.js";
+import mongoose from "mongoose";
+import { Appointment } from "../models/Appointment.js";
+import { Message } from "../models/Message.js";
+
+function formatDate(value) {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
 
 export async function getAppointmentById(appointmentId) {
-  const rows = await query(`select * from appointments where id=:appointmentId`, { appointmentId });
-  return rows[0] || null;
+  if (!mongoose.Types.ObjectId.isValid(appointmentId)) return null;
+  return Appointment.findById(appointmentId).lean();
 }
 
 export async function assertActorInAppointment({ appointmentId, role, actorId }) {
@@ -10,57 +20,71 @@ export async function assertActorInAppointment({ appointmentId, role, actorId })
   if (!appt) return { ok: false, status: 404, error: "Appointment not found" };
 
   const allowed =
-    (role === "patient" && Number(appt.patient_id) === actorId) ||
-    (role === "therapist" && Number(appt.therapist_id) === actorId);
+    (role === "patient" && Number(appt.patientId) === actorId) ||
+    (role === "therapist" && Number(appt.therapistId) === actorId);
 
   if (!allowed) return { ok: false, status: 403, error: "Not allowed for this appointment" };
   return { ok: true, appointment: appt };
 }
 
 export async function listAppointmentsForActor({ role, actorId }) {
-  const where = role === "therapist" ? "therapist_id=:actorId" : "patient_id=:actorId";
+  const match = role === "therapist" ? { therapistId: actorId } : { patientId: actorId };
 
-  return query(
-    `select
-      a.id as appointmentId,
-      a.patient_id as patientId,
-      a.patient_name as patientName,
-      a.therapist_id as therapistId,
-      a.therapist_name as therapistName,
-      a.starts_at as startsAt,
-      a.status as status,
-      (
-        select
-          case
-            when m.body is not null then left(m.body, 80)
-            when m.file_url is not null and m.file_type like 'image/%' then '[Image]'
-            when m.file_url is not null then '[Attachment]'
-            else ''
-          end
-        from chat_messages m
-        where m.appointment_id=a.id
-        order by m.created_at desc
-        limit 1
-      ) as lastMessage,
-      (
-        select date_format(m.created_at, '%Y-%m-%d %H:%i:%s')
-        from chat_messages m
-        where m.appointment_id=a.id
-        order by m.created_at desc
-        limit 1
-      ) as lastMessageAt
-    from appointments a
-    where ${where}
-    order by coalesce(lastMessageAt, date_format(a.created_at, '%Y-%m-%d %H:%i:%s')) desc`,
-    { actorId }
-  );
+  const rows = await Appointment.aggregate([
+    { $match: match },
+    { $sort: { createdAt: -1 } },
+    {
+      $lookup: {
+        from: "messages",
+        let: { appointmentId: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$appointmentId", "$$appointmentId"] } } },
+          { $sort: { createdAt: -1 } },
+          { $limit: 1 },
+          { $project: { body: 1, fileUrl: 1, fileType: 1, createdAt: 1 } },
+        ],
+        as: "lastMessageDoc",
+      },
+    },
+    { $addFields: { lastMessageDoc: { $arrayElemAt: ["$lastMessageDoc", 0] } } },
+  ]);
+
+  return rows
+    .map((row) => {
+      const last = row.lastMessageDoc;
+      let lastMessage = "";
+      if (last?.body) lastMessage = last.body.slice(0, 80);
+      else if (last?.fileUrl && (last?.fileType || "").startsWith("image/")) lastMessage = "[Image]";
+      else if (last?.fileUrl) lastMessage = "[Attachment]";
+
+      return {
+        appointmentId: row._id.toString(),
+        patientId: row.patientId,
+        patientName: row.patientName,
+        therapistId: row.therapistId,
+        therapistName: row.therapistName,
+        startsAt: formatDate(row.startsAt),
+        status: row.status,
+        lastMessage,
+        lastMessageAt: formatDate(last?.createdAt),
+        createdAt: formatDate(row.createdAt),
+      };
+    })
+    .sort((a, b) => {
+      const aTime = new Date(a.lastMessageAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.lastMessageAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
 }
 
 export async function createAppointment({ patientId, patientName, therapistId, therapistName, startsAt }) {
-  const result = await query(
-    `insert into appointments (patient_id, patient_name, therapist_id, therapist_name, starts_at, status)
-     values (:patientId, :patientName, :therapistId, :therapistName, :startsAt, 'booked')`,
-    { patientId, patientName, therapistId, therapistName, startsAt }
-  );
-  return { insertId: result.insertId };
+  const appointment = await Appointment.create({
+    patientId,
+    patientName,
+    therapistId,
+    therapistName,
+    startsAt: new Date(startsAt),
+    status: "booked",
+  });
+  return { appointmentId: appointment._id.toString() };
 }

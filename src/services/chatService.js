@@ -1,57 +1,62 @@
-import { query } from "../config/db.js";
+import mongoose from "mongoose";
+import { Message } from "../models/Message.js";
+
+function formatDate(value) {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function toMessageDto(doc) {
+  if (!doc) return null;
+  return {
+    id: doc._id.toString(),
+    appointmentId: doc.appointmentId.toString(),
+    senderRole: doc.senderRole,
+    senderId: doc.senderId,
+    body: doc.body,
+    fileUrl: doc.fileUrl,
+    fileName: doc.fileName,
+    fileType: doc.fileType,
+    createdAt: formatDate(doc.createdAt),
+  };
+}
 
 export async function listMessages({ appointmentId }) {
-  return query(
-    `select
-      id,
-      appointment_id as appointmentId,
-      sender_role as senderRole,
-      sender_id as senderId,
-      body,
-      file_url as fileUrl,
-      file_name as fileName,
-      file_type as fileType,
-      date_format(created_at, '%Y-%m-%d %H:%i:%s') as createdAt
-    from chat_messages
-    where appointment_id=:appointmentId
-    order by created_at asc
-    limit 500`,
-    { appointmentId }
-  );
+  if (!mongoose.Types.ObjectId.isValid(appointmentId)) return [];
+  const rows = await Message.find({ appointmentId })
+    .sort({ createdAt: 1 })
+    .limit(500)
+    .lean();
+  return rows.map(toMessageDto);
 }
 
 export async function getMessageById(id) {
-  const rows = await query(
-    `select
-      id,
-      appointment_id as appointmentId,
-      sender_role as senderRole,
-      sender_id as senderId,
-      body,
-      file_url as fileUrl,
-      file_name as fileName,
-      file_type as fileType,
-      date_format(created_at, '%Y-%m-%d %H:%i:%s') as createdAt
-     from chat_messages where id=:id`,
-    { id }
-  );
-  return rows[0] || null;
+  if (!mongoose.Types.ObjectId.isValid(id)) return null;
+  const row = await Message.findById(id).lean();
+  return toMessageDto(row);
 }
 
 export async function createTextMessage({ appointmentId, senderRole, senderId, body }) {
-  const result = await query(
-    `insert into chat_messages (appointment_id, sender_role, sender_id, body)
-     values (:appointmentId, :senderRole, :senderId, :body)`,
-    { appointmentId, senderRole, senderId, body }
-  );
-  return getMessageById(result.insertId);
+  const message = await Message.create({
+    appointmentId,
+    senderRole,
+    senderId,
+    body,
+  });
+  return getMessageById(message._id.toString());
 }
 
 export async function createFileMessage({ appointmentId, senderRole, senderId, fileUrl, fileName, fileType }) {
-  const result = await query(
-    `insert into chat_messages (appointment_id, sender_role, sender_id, body, file_url, file_name, file_type)
-     values (:appointmentId, :senderRole, :senderId, null, :fileUrl, :fileName, :fileType)`,
-    { appointmentId, senderRole, senderId, fileUrl, fileName, fileType }
-  );
-  return getMessageById(result.insertId);
+  const message = await Message.create({
+    appointmentId,
+    senderRole,
+    senderId,
+    fileUrl,
+    fileName,
+    fileType,
+  });
+  return getMessageById(message._id.toString());
 }
