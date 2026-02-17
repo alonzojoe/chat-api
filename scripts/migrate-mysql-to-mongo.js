@@ -34,6 +34,7 @@ async function migrate() {
       therapistId: String(row.therapist_id),
       therapistName: row.therapist_name,
       startsAt: row.starts_at,
+      appointmentDateTime: row.appointment_date_time || row.created_at || new Date(),
       status: row.status || "booked",
       createdAt: row.created_at || new Date(),
       updatedAt: row.created_at || new Date(),
