@@ -66,19 +66,19 @@ Because this is a prototype (no auth middleware yet), we pass `role` and `actorI
 > Note: `appointmentId` is an external ID (string) and is used to link messages. `actorId` is also a string.
 > The therapist sidebar should use **List appointments** (below) to show all chats.
 
-### Endpoints table
+### Endpoints table (with samples)
 
-| Method | Path | Required params | Notes |
-| --- | --- | --- | --- |
-| GET | `/health` | none | Health check |
-| GET | `/api/appointments` | **query:** `role`, `actorId` | List appointments (sidebar). `role=patient\|therapist`. |
-| POST | `/api/appointments` | **body:** `patientId`, `patientName`, `therapistId`, `therapistName`, `startsAt` | Optional: `appointmentId`, `appointmentDateTime` |
-| PATCH | `/api/appointments/status` | **body:** `appointmentId`, `status` | `status` allowed: `booked, completed, cancelled, canceled, no_show, noshow` |
-| GET | `/api/chat/messages` | **query:** `appointmentId`, `role`, `actorId` | Load messages for a thread |
-| POST | `/api/chat/message` | **body:** `appointmentId`, `role`, `actorId`, `body` | Send text message |
-| POST | `/api/chat/upload` | **form:** `appointmentId`, `role`, `actorId`, `file` | Upload file message (multipart/form-data) |
-| POST | `/api/chat/read` | **body:** `appointmentId`, `role`, `actorId` | Optional: `lastReadMessageId` |
-| GET | `/api/chat/read` | **query:** `appointmentId`, `role`, `actorId` | Read summary (unread count) |
+| Method | Path | Required params | Sample request | Sample response |
+| --- | --- | --- | --- | --- |
+| GET | `/health` | none | `GET /health` | `{ "ok": true }` |
+| GET | `/api/appointments` | **query:** `role`, `actorId` | `GET /api/appointments?role=therapist&actorId=therapist_10` | `{ "appointments": [ { "appointmentId": "65c1e6...", "patientId": "patient_1", "patientName": "John Cruz", "therapistId": "therapist_10", "therapistName": "Dr. Reyes", "startsAt": "2026-02-12 12:06:42", "appointmentDateTime": "2026-02-12T12:06:42.879Z", "status": "booked", "lastMessage": "Hi doc", "lastMessageAt": "2026-02-12 12:10:00", "unreadCount": 2 } ] }` |
+| POST | `/api/appointments` | **body:** `patientId`, `patientName`, `therapistId`, `therapistName`, `startsAt` | `{ "appointmentId": "65c1e6...", "patientId": "patient_1", "patientName": "John Cruz", "therapistId": "therapist_10", "therapistName": "Dr. Reyes", "startsAt": "2026-02-12 12:06:42", "appointmentDateTime": "2026-02-12T12:06:42.879Z" }` | `{ "ok": true, "insertId": "65c1e6..." }` |
+| PATCH | `/api/appointments/status` | **body:** `appointmentId`, `status` | `{ "appointmentId": "65c1e6...", "status": "completed" }` | `{ "ok": true }` |
+| GET | `/api/chat/messages` | **query:** `appointmentId`, `role`, `actorId` | `GET /api/chat/messages?appointmentId=65c1e6...&role=therapist&actorId=therapist_10` | `{ "messages": [ { "id": "66a1...", "appointmentId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "body": "Hello doc", "fileUrl": null, "fileName": null, "fileType": null, "createdAt": "2026-02-12 12:07:10", "seenAt": null } ] }` |
+| POST | `/api/chat/message` | **body:** `appointmentId`, `role`, `actorId`, `body` | `{ "appointmentId": "65c1e6...", "role": "patient", "actorId": "patient_1", "body": "Hello doc" }` | `{ "message": { "id": "66a1...", "appointmentId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "body": "Hello doc", "createdAt": "2026-02-12 12:07:10", "seenAt": null } }` |
+| POST | `/api/chat/upload` | **form:** `appointmentId`, `role`, `actorId`, `file` | `multipart/form-data` | `{ "message": { "id": "66a2...", "appointmentId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "fileUrl": "/uploads/1700000000-abc.jpg", "fileName": "scan.jpg", "fileType": "image/jpeg", "createdAt": "2026-02-12 12:08:00", "seenAt": null }, "publicUrl": "http://localhost:4000/uploads/1700000000-abc.jpg" }` |
+| POST | `/api/chat/read` | **body:** `appointmentId`, `role`, `actorId` | `{ "appointmentId": "65c1e6...", "role": "therapist", "actorId": "therapist_10", "lastReadMessageId": "66a1..." }` | `{ "ok": true, "reads": { "appointmentId": "65c1e6...", "unreadCount": 0, "lastSeenAt": "2026-02-12 12:09:00", "updatedCount": 2 } }` |
+| GET | `/api/chat/read` | **query:** `appointmentId`, `role`, `actorId` | `GET /api/chat/read?appointmentId=65c1e6...&role=therapist&actorId=therapist_10` | `{ "reads": { "appointmentId": "65c1e6...", "unreadCount": 1, "lastSeenAt": "2026-02-12 12:09:00" } }` |
 
 ### Examples
 
