@@ -27,9 +27,6 @@ chat-api/
       actor.js
     app.js
     server.js
-  db/ (legacy MySQL files, unused)
-    schema.sql
-    seed.sql
   uploads/
   .env.example
   package.json
