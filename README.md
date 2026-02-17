@@ -106,7 +106,8 @@ Because this is a prototype (no auth middleware yet), we pass `role` and `actorI
 }
 ```
 
-> Note → In real implementation, **remove** `clientName` and `therapistName` from `conversations` and resolve names from your user service.
+> Note → In real implementation, **remove** `clientName` and `therapistName` from `conversations` and connect the `clientId` and `therapistId` to your current database.
+
 
 ### Endpoints table (with samples)
 
