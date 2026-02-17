@@ -20,6 +20,7 @@ function toMessageDto(doc) {
     fileName: doc.fileName,
     fileType: doc.fileType,
     createdAt: formatDate(doc.createdAt),
+    seenAt: formatDate(doc.seenAt),
   };
 }
 

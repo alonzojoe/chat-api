@@ -8,6 +8,7 @@ const AppointmentSchema = new mongoose.Schema(
     therapistId: { type: String, required: true },
     therapistName: { type: String, required: true },
     startsAt: { type: Date, required: true },
+    appointmentDateTime: { type: Date, default: null },
     status: { type: String, default: "booked" },
   },
   { timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" } }

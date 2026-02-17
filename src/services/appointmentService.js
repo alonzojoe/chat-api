@@ -57,6 +57,7 @@ export async function listAppointmentsForActor({ role, actorId }) {
       a.therapist_id as therapistId,
       a.therapist_name as therapistName,
       a.starts_at as startsAt,
+      a.appointment_date_time as appointmentDateTime,
       a.status as status,
       (
         select
@@ -97,11 +98,27 @@ export async function updateAppointmentStatusByMongoId({ appointmentMongoId, sta
   return { affectedRows: result.affectedRows };
 }
 
-export async function createAppointment({ appointmentMongoId, patientId, patientName, therapistId, therapistName, startsAt }) {
+export async function createAppointment({
+  appointmentMongoId,
+  patientId,
+  patientName,
+  therapistId,
+  therapistName,
+  startsAt,
+  appointmentDateTime,
+}) {
   const result = await query(
-    `insert into appointments (appointment_id, patient_id, patient_name, therapist_id, therapist_name, starts_at, status)
-     values (:appointmentMongoId, :patientId, :patientName, :therapistId, :therapistName, :startsAt, 'booked')`,
-    { appointmentMongoId: appointmentMongoId || null, patientId, patientName, therapistId, therapistName, startsAt }
+    `insert into appointments (appointment_id, patient_id, patient_name, therapist_id, therapist_name, starts_at, appointment_date_time, status)
+     values (:appointmentMongoId, :patientId, :patientName, :therapistId, :therapistName, :startsAt, :appointmentDateTime, 'booked')`,
+    {
+      appointmentMongoId: appointmentMongoId || null,
+      patientId,
+      patientName,
+      therapistId,
+      therapistName,
+      startsAt,
+      appointmentDateTime: appointmentDateTime || null,
+    }
   );
 
   // initialize read cursor row (1 per appointment)

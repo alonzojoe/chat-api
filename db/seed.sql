@@ -1,9 +1,9 @@
 -- Canonical: db/seed.sql
 
-insert into appointments (appointment_id, patient_id, patient_name, therapist_id, therapist_name, starts_at, status)
+insert into appointments (appointment_id, patient_id, patient_name, therapist_id, therapist_name, starts_at, appointment_date_time, status)
 values
-  ('65c1e6a1b2c3d4e5f6071829', 'patient_1', 'John Cruz', 'therapist_10', 'Dr. Reyes', date_add(now(), interval 1 day), 'booked'),
-  ('65c1e6a1b2c3d4e5f6071830', 'patient_2', 'Ana Santos', 'therapist_10', 'Dr. Reyes', date_add(now(), interval 2 day), 'booked');
+  ('65c1e6a1b2c3d4e5f6071829', 'patient_1', 'John Cruz', 'therapist_10', 'Dr. Reyes', date_add(now(), interval 1 day), now(), 'booked'),
+  ('65c1e6a1b2c3d4e5f6071830', 'patient_2', 'Ana Santos', 'therapist_10', 'Dr. Reyes', date_add(now(), interval 2 day), now(), 'booked');
 
 -- initialize read cursors
 insert into chat_reads (appointment_id) values (1), (2);

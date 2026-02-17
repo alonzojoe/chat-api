@@ -14,7 +14,7 @@ appointmentsRouter.get("/", async (req, res) => {
 });
 
 // POST /api/appointments
-// { appointmentId?, patientId, patientName, therapistId, therapistName, startsAt }
+// { appointmentId?, patientId, patientName, therapistId, therapistName, startsAt, appointmentDateTime? }
 // - appointmentId: optional MongoDB appointment id (stored in appointments.appointment_id)
 appointmentsRouter.post("/", async (req, res) => {
   const appointmentMongoId = (req.body.appointmentId || "").toString() || null;
@@ -23,6 +23,7 @@ appointmentsRouter.post("/", async (req, res) => {
   const therapistId = (req.body.therapistId || "").toString();
   const therapistName = (req.body.therapistName || "").toString();
   const startsAt = req.body.startsAt; // 'YYYY-MM-DD HH:mm:ss'
+  const appointmentDateTime = req.body.appointmentDateTime; // ISO string
 
   if (!patientId.trim()) return res.status(400).json({ error: "patientId required" });
   if (!patientName.trim()) return res.status(400).json({ error: "patientName required" });
@@ -37,6 +38,7 @@ appointmentsRouter.post("/", async (req, res) => {
     therapistId: therapistId.trim(),
     therapistName: therapistName.trim(),
     startsAt,
+    appointmentDateTime,
   });
 
   res.json({ ok: true, ...result });

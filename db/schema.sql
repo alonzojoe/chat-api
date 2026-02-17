@@ -8,6 +8,7 @@ create table if not exists appointments (
   therapist_id varchar(120) not null,
   therapist_name varchar(160) not null,
   starts_at datetime not null,
+  appointment_date_time datetime null,
   status varchar(20) not null default '',
   created_at datetime not null default current_timestamp,
   index idx_appt_actor_patient (patient_id),
