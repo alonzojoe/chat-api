@@ -66,7 +66,23 @@ Because this is a prototype (no auth middleware yet), we pass `role` and `actorI
 > Note: `appointmentId` is an external ID (string) and is used to link messages. `actorId` is also a string.
 > The therapist sidebar should use **List appointments** (below) to show all chats.
 
-### List appointments (sidebar)
+### Endpoints table
+
+| Method | Path | Required params | Notes |
+| --- | --- | --- | --- |
+| GET | `/health` | none | Health check |
+| GET | `/api/appointments` | **query:** `role`, `actorId` | List appointments (sidebar). `role=patient\|therapist`. |
+| POST | `/api/appointments` | **body:** `patientId`, `patientName`, `therapistId`, `therapistName`, `startsAt` | Optional: `appointmentId`, `appointmentDateTime` |
+| PATCH | `/api/appointments/status` | **body:** `appointmentId`, `status` | `status` allowed: `booked, completed, cancelled, canceled, no_show, noshow` |
+| GET | `/api/chat/messages` | **query:** `appointmentId`, `role`, `actorId` | Load messages for a thread |
+| POST | `/api/chat/message` | **body:** `appointmentId`, `role`, `actorId`, `body` | Send text message |
+| POST | `/api/chat/upload` | **form:** `appointmentId`, `role`, `actorId`, `file` | Upload file message (multipart/form-data) |
+| POST | `/api/chat/read` | **body:** `appointmentId`, `role`, `actorId` | Optional: `lastReadMessageId` |
+| GET | `/api/chat/read` | **query:** `appointmentId`, `role`, `actorId` | Read summary (unread count) |
+
+### Examples
+
+#### List appointments (sidebar)
 
 Therapist:
 
@@ -80,7 +96,7 @@ Patient:
 curl "http://localhost:4000/api/appointments?role=patient&actorId=1"
 ```
 
-### Create appointment
+#### Create appointment
 
 ```bash
 curl -X POST http://localhost:4000/api/appointments \
@@ -96,7 +112,7 @@ curl -X POST http://localhost:4000/api/appointments \
   }'
 ```
 
-### Update appointment status
+#### Update appointment status
 
 ```bash
 curl -X PATCH http://localhost:4000/api/appointments/status \
@@ -104,13 +120,13 @@ curl -X PATCH http://localhost:4000/api/appointments/status \
   -d '{"appointmentId":"<mongo-appointment-id>","status":"completed"}'
 ```
 
-### Load messages
+#### Load messages
 
 ```bash
 curl "http://localhost:4000/api/chat/messages?appointmentId=<appointmentId>&role=therapist&actorId=10"
 ```
 
-### Send message
+#### Send message
 
 ```bash
 curl -X POST http://localhost:4000/api/chat/message \
@@ -118,7 +134,7 @@ curl -X POST http://localhost:4000/api/chat/message \
   -d '{"appointmentId":"<appointmentId>","role":"patient","actorId":1,"body":"Hello doc"}'
 ```
 
-### Upload file
+#### Upload file
 
 ```bash
 curl -X POST http://localhost:4000/api/chat/upload \
@@ -128,7 +144,7 @@ curl -X POST http://localhost:4000/api/chat/upload \
   -F file=@/path/to/image.jpg
 ```
 
-### Mark messages as read
+#### Mark messages as read
 
 ```bash
 curl -X POST http://localhost:4000/api/chat/read \
@@ -136,7 +152,7 @@ curl -X POST http://localhost:4000/api/chat/read \
   -d '{"appointmentId":"<appointmentId>","role":"therapist","actorId":"therapist_10","lastReadMessageId":"<messageId>"}'
 ```
 
-### Get read summary
+#### Get read summary
 
 ```bash
 curl "http://localhost:4000/api/chat/read?appointmentId=<appointmentId>&role=therapist&actorId=therapist_10"
