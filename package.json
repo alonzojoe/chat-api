@@ -6,8 +6,7 @@
   "description": "Prototype 1:1 appointment chat API (Express + MongoDB + Socket.IO)",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
-    "migrate:mysql": "node scripts/migrate-mysql-to-mongo.js"
+    "start": "node src/server.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
@@ -18,7 +17,6 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "mysql2": "^3.16.3",
     "nodemon": "^3.1.11"
   }
 }

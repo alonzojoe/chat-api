@@ -9,6 +9,7 @@ const MessageSchema = new mongoose.Schema(
     fileUrl: { type: String, default: null },
     fileName: { type: String, default: null },
     fileType: { type: String, default: null },
+    seenAt: { type: Date, default: null },
   },
   { timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" } }
 );

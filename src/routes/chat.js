@@ -7,7 +7,8 @@ import { env } from "../config/env.js";
 import { parseActor } from "../utils/actor.js";
 import { assertActorInAppointment } from "../services/appointmentService.js";
 import { createFileMessage, createTextMessage, listMessages } from "../services/chatService.js";
-import { getReadsByAppointmentId, updateLastRead } from "../services/chatReadService.js";
+import { getReadSummary, markMessagesSeen } from "../services/chatReadService.js";
+import { actorRoom } from "../sockets/index.js";
 
 export function createChatRouter({ io }) {
   const router = Router();
@@ -71,6 +72,14 @@ export function createChatRouter({ io }) {
     });
 
     io.to(roomName(appointmentId)).emit("message:new", { message });
+
+    const otherRole = actor.role === "patient" ? "therapist" : "patient";
+    const otherActorId =
+      actor.role === "patient" ? allowed.appointment.therapistId : allowed.appointment.patientId;
+    if (otherActorId) {
+      io.to(actorRoom({ role: otherRole, actorId: otherActorId.toString() })).emit("message:new", { message });
+    }
+
     res.json({ message });
   });
 
@@ -99,29 +108,50 @@ export function createChatRouter({ io }) {
 
     io.to(roomName(appointmentId)).emit("message:new", { message });
 
+    const otherRole = actor.role === "patient" ? "therapist" : "patient";
+    const otherActorId =
+      actor.role === "patient" ? allowed.appointment.therapistId : allowed.appointment.patientId;
+    if (otherActorId) {
+      io.to(actorRoom({ role: otherRole, actorId: otherActorId.toString() })).emit("message:new", { message });
+    }
+
     const base = env.uploads.publicBaseUrl || `http://localhost:${env.port}`;
     res.json({ message, publicUrl: `${base}${urlPath}` });
   });
 
   // POST /api/chat/read
-  // body: { appointmentId, lastReadMessageId }
+  // body: { appointmentId, lastReadMessageId? }
   // role + actorId come from parseActor (prototype)
   router.post("/read", async (req, res) => {
     const actor = parseActor(req);
     if (!actor.ok) return res.status(400).json({ error: actor.error });
 
-    const appointmentId = Number(req.body.appointmentId);
-    const lastReadMessageId = Number(req.body.lastReadMessageId);
+    const appointmentId = (req.body.appointmentId || "").toString();
+    const lastReadMessageId = (req.body.lastReadMessageId || "").toString();
 
-    if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
-    if (!lastReadMessageId) return res.status(400).json({ error: "lastReadMessageId required" });
+    if (!appointmentId.trim()) return res.status(400).json({ error: "appointmentId required" });
 
     const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
     if (!allowed.ok) return res.status(allowed.status).json({ error: allowed.error });
 
-    const reads = await updateLastRead({ appointmentId, role: actor.role, lastReadMessageId });
+    const reads = await markMessagesSeen({
+      appointmentId: appointmentId.trim(),
+      role: actor.role,
+      lastReadMessageId: lastReadMessageId.trim() || null,
+    });
 
     io.to(roomName(appointmentId)).emit("read:updated", { appointmentId, reads });
+
+    const otherRole = actor.role === "patient" ? "therapist" : "patient";
+    const otherActorId =
+      actor.role === "patient" ? allowed.appointment.therapistId : allowed.appointment.patientId;
+    if (otherActorId) {
+      io.to(actorRoom({ role: otherRole, actorId: otherActorId.toString() })).emit("read:updated", {
+        appointmentId,
+        reads,
+      });
+    }
+
     res.json({ ok: true, reads });
   });
 
@@ -130,13 +160,13 @@ export function createChatRouter({ io }) {
     const actor = parseActor(req);
     if (!actor.ok) return res.status(400).json({ error: actor.error });
 
-    const appointmentId = Number(req.query.appointmentId);
-    if (!appointmentId) return res.status(400).json({ error: "appointmentId required" });
+    const appointmentId = (req.query.appointmentId || "").toString();
+    if (!appointmentId.trim()) return res.status(400).json({ error: "appointmentId required" });
 
     const allowed = await assertActorInAppointment({ appointmentId, role: actor.role, actorId: actor.actorId });
     if (!allowed.ok) return res.status(allowed.status).json({ error: allowed.error });
 
-    const reads = await getReadsByAppointmentId(appointmentId);
+    const reads = await getReadSummary({ appointmentId: appointmentId.trim(), role: actor.role });
     res.json({ reads });
   });
 

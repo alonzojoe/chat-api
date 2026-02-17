@@ -9,6 +9,14 @@ function formatDate(value) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+function lastMessagePreview(message) {
+  if (!message) return "";
+  if (message.body) return message.body.slice(0, 80);
+  if (message.fileUrl && message.fileType?.startsWith("image/")) return "[Image]";
+  if (message.fileUrl) return "[Attachment]";
+  return "";
+}
+
 export async function getAppointmentById(appointmentId) {
   return Appointment.findOne({ appointmentId }).lean();
 }
@@ -18,94 +26,78 @@ export async function assertActorInAppointment({ appointmentId, role, actorId })
   if (!appt) return { ok: false, status: 404, error: "Appointment not found" };
 
   const allowed =
-    (role === "patient" && (appt.patient_id || "").toString() === actorId) ||
-    (role === "therapist" && (appt.therapist_id || "").toString() === actorId);
+    (role === "patient" && (appt.patientId || "").toString() === actorId) ||
+    (role === "therapist" && (appt.therapistId || "").toString() === actorId);
 
   if (!allowed) return { ok: false, status: 403, error: "Not allowed for this appointment" };
   return { ok: true, appointment: appt };
 }
 
 export async function listAppointmentsForActor({ role, actorId }) {
-  const where = role === "therapist" ? "a.therapist_id=:actorId" : "a.patient_id=:actorId";
+  const filter = role === "therapist" ? { therapistId: actorId } : { patientId: actorId };
 
-  // Unread logic:
-  // - Therapist unread: messages from patient where id > therapist_last_read_message_id (or all if null)
-  // - Patient unread: messages from therapist where id > patient_last_read_message_id (or all if null)
-  const unreadExpr =
-    role === "therapist"
-      ? `(
-          select count(*)
-          from chat_messages m
-          where m.appointment_id=a.id
-            and m.sender_role='patient'
-            and (r.therapist_last_read_message_id is null or m.id > r.therapist_last_read_message_id)
-        )`
-      : `(
-          select count(*)
-          from chat_messages m
-          where m.appointment_id=a.id
-            and m.sender_role='therapist'
-            and (r.patient_last_read_message_id is null or m.id > r.patient_last_read_message_id)
-        )`;
+  const appointments = await Appointment.find(filter).sort({ updatedAt: -1 }).lean();
 
-  return query(
-    `select
-      a.id as appointmentId,
-      a.appointment_id as mongoAppointmentId,
-      a.patient_id as patientId,
-      a.patient_name as patientName,
-      a.therapist_id as therapistId,
-      a.therapist_name as therapistName,
-      a.starts_at as startsAt,
-      a.status as status,
-      (
-        select
-          case
-            when m.body is not null then left(m.body, 80)
-            when m.file_url is not null and m.file_type like 'image/%' then '[Image]'
-            when m.file_url is not null then '[Attachment]'
-            else ''
-          end
-        from chat_messages m
-        where m.appointment_id=a.id
-        order by m.created_at desc
-        limit 1
-      ) as lastMessage,
-      (
-        select date_format(m.created_at, '%Y-%m-%d %H:%i:%s')
-        from chat_messages m
-        where m.appointment_id=a.id
-        order by m.created_at desc
-        limit 1
-      ) as lastMessageAt,
-      ${unreadExpr} as unreadCount
-    from appointments a
-    left join chat_reads r on r.appointment_id=a.id
-    where ${where}
-    order by coalesce(lastMessageAt, date_format(a.created_at, '%Y-%m-%d %H:%i:%s')) desc`,
-    { actorId }
+  const rows = await Promise.all(
+    appointments.map(async (appt) => {
+      const lastMessage = await Message.findOne({ appointmentId: appt.appointmentId })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const otherRole = role === "therapist" ? "patient" : "therapist";
+      const unreadCount = await Message.countDocuments({
+        appointmentId: appt.appointmentId,
+        senderRole: otherRole,
+        seenAt: null,
+      });
+
+      return {
+        appointmentId: appt.appointmentId,
+        patientId: appt.patientId,
+        patientName: appt.patientName,
+        therapistId: appt.therapistId,
+        therapistName: appt.therapistName,
+        startsAt: appt.startsAt,
+        appointmentDateTime: appt.appointmentDateTime || null,
+        status: appt.status || "booked",
+        lastMessage: lastMessagePreview(lastMessage),
+        lastMessageAt: formatDate(lastMessage?.createdAt),
+        unreadCount,
+      };
+    })
   );
+
+  return rows.sort((a, b) => {
+    const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : new Date(a.startsAt).getTime();
+    const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : new Date(b.startsAt).getTime();
+    return bTime - aTime;
+  });
 }
 
 export async function updateAppointmentStatusByMongoId({ appointmentMongoId, status }) {
-  const result = await query(
-    `update appointments
-     set status=:status
-     where appointment_id=:appointmentMongoId`,
-    { appointmentMongoId, status }
-  );
-  return { affectedRows: result.affectedRows };
+  const result = await Appointment.updateOne({ appointmentId: appointmentMongoId }, { $set: { status } });
+  return { affectedRows: result.matchedCount || 0 };
 }
 
-export async function createAppointment({ appointmentMongoId, patientId, patientName, therapistId, therapistName, startsAt }) {
-  const result = await query(
-    `insert into appointments (appointment_id, patient_id, patient_name, therapist_id, therapist_name, starts_at, status)
-     values (:appointmentMongoId, :patientId, :patientName, :therapistId, :therapistName, :startsAt, 'booked')`,
-    { appointmentMongoId: appointmentMongoId || null, patientId, patientName, therapistId, therapistName, startsAt }
-  );
+export async function createAppointment({
+  appointmentMongoId,
+  patientId,
+  patientName,
+  therapistId,
+  therapistName,
+  startsAt,
+  appointmentDateTime,
+}) {
+  const created = await Appointment.create({
+    appointmentId: appointmentMongoId || undefined,
+    patientId,
+    patientName,
+    therapistId,
+    therapistName,
+    startsAt,
+    appointmentDateTime: appointmentDateTime || null,
+    status: "booked",
+  });
 
-  // initialize read cursor row (1 per appointment)
-  await query(`insert into chat_reads (appointment_id) values (:appointmentId)`, { appointmentId: result.insertId });
-
-  return { insertId: result.insertId };
+  return { insertId: created._id.toString() };
 }

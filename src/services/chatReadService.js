@@ -1,33 +1,52 @@
-import { query } from "../config/db.js";
+import { Message } from "../models/Message.js";
 
-export async function getReadsByAppointmentId(appointmentId) {
-  const rows = await query(
-    `select
-      appointment_id as appointmentId,
-      patient_last_read_message_id as patientLastReadMessageId,
-      date_format(patient_last_read_at, '%Y-%m-%d %H:%i:%s') as patientLastReadAt,
-      therapist_last_read_message_id as therapistLastReadMessageId,
-      date_format(therapist_last_read_at, '%Y-%m-%d %H:%i:%s') as therapistLastReadAt
-     from chat_reads
-     where appointment_id=:appointmentId`,
-    { appointmentId }
-  );
-  return rows[0] || null;
+function formatDate(value) {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export async function updateLastRead({ appointmentId, role, lastReadMessageId }) {
-  const colId = role === "patient" ? "patient_last_read_message_id" : "therapist_last_read_message_id";
-  const colAt = role === "patient" ? "patient_last_read_at" : "therapist_last_read_at";
+function getOtherRole(role) {
+  return role === "patient" ? "therapist" : "patient";
+}
 
-  // Ensure row exists + only move cursor forward.
-  await query(
-    `insert into chat_reads (appointment_id, ${colId}, ${colAt})
-     values (:appointmentId, :lastReadMessageId, now())
-     on duplicate key update
-       ${colId} = greatest(coalesce(${colId}, 0), values(${colId})),
-       ${colAt} = now()`,
-    { appointmentId, lastReadMessageId }
-  );
+export async function getReadSummary({ appointmentId, role }) {
+  const otherRole = getOtherRole(role);
+  const unreadCount = await Message.countDocuments({ appointmentId, senderRole: otherRole, seenAt: null });
 
-  return getReadsByAppointmentId(appointmentId);
+  const lastSeen = await Message.findOne({ appointmentId, senderRole: otherRole, seenAt: { $ne: null } })
+    .sort({ seenAt: -1 })
+    .lean();
+
+  return {
+    appointmentId: appointmentId.toString(),
+    unreadCount,
+    lastSeenAt: formatDate(lastSeen?.seenAt),
+  };
+}
+
+export async function markMessagesSeen({ appointmentId, role, lastReadMessageId }) {
+  const otherRole = getOtherRole(role);
+  const filter = {
+    appointmentId,
+    senderRole: otherRole,
+    seenAt: null,
+  };
+
+  if (lastReadMessageId) {
+    const lastRead = await Message.findById(lastReadMessageId).lean();
+    if (lastRead?.createdAt) {
+      filter.createdAt = { $lte: lastRead.createdAt };
+    }
+  }
+
+  const result = await Message.updateMany(filter, { $set: { seenAt: new Date() } });
+
+  const summary = await getReadSummary({ appointmentId, role });
+  return {
+    ...summary,
+    updatedCount: result?.modifiedCount ?? result?.nModified ?? 0,
+  };
 }

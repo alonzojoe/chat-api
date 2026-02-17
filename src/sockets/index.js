@@ -4,8 +4,20 @@ export function appointmentRoom(appointmentId) {
   return `appointment:${appointmentId}`;
 }
 
+export function actorRoom({ role, actorId }) {
+  return `actor:${role}:${actorId}`;
+}
+
 export function registerSockets(io) {
   io.on("connection", (socket) => {
+    socket.on("join:actor", async ({ role, actorId }) => {
+      const actorRole = (role || "").toString();
+      const actorStr = (actorId || "").toString();
+      if (!actorStr.trim() || !["patient", "therapist"].includes(actorRole)) return;
+      socket.join(actorRoom({ role: actorRole, actorId: actorStr.trim() }));
+      socket.emit("actor:joined", { role: actorRole, actorId: actorStr.trim() });
+    });
+
     socket.on("join", async ({ appointmentId, role, actorId }) => {
       const id = (appointmentId || "").toString();
       const actorRole = (role || "").toString();
@@ -16,6 +28,7 @@ export function registerSockets(io) {
       if (!allowed.ok) return;
 
       socket.join(appointmentRoom(id));
+      socket.join(actorRoom({ role: actorRole, actorId: actorStr.trim() }));
       socket.emit("joined", { appointmentId: id });
     });
   });
