@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const MessageSchema = new mongoose.Schema(
   {
-    appointmentId: { type: String, required: true, index: true },
+    conversationId: { type: String, required: true, index: true },
     senderRole: { type: String, enum: ["patient", "therapist"], required: true },
     senderId: { type: String, required: true },
     body: { type: String, default: null },
@@ -14,6 +14,6 @@ const MessageSchema = new mongoose.Schema(
   { timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" } }
 );
 
-MessageSchema.index({ appointmentId: 1, createdAt: -1 });
+MessageSchema.index({ conversationId: 1, createdAt: -1 });
 
 export const Message = mongoose.model("Message", MessageSchema);

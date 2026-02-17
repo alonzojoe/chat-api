@@ -12,7 +12,7 @@ function toMessageDto(doc) {
   if (!doc) return null;
   return {
     id: doc._id.toString(),
-    appointmentId: doc.appointmentId.toString(),
+    conversationId: doc.conversationId.toString(),
     senderRole: doc.senderRole,
     senderId: doc.senderId?.toString() || "",
     body: doc.body,
@@ -24,8 +24,8 @@ function toMessageDto(doc) {
   };
 }
 
-export async function listMessages({ appointmentId }) {
-  const rows = await Message.find({ appointmentId })
+export async function listMessages({ conversationId }) {
+  const rows = await Message.find({ conversationId })
     .sort({ createdAt: 1 })
     .limit(500)
     .lean();
@@ -37,9 +37,9 @@ export async function getMessageById(id) {
   return toMessageDto(row);
 }
 
-export async function createTextMessage({ appointmentId, senderRole, senderId, body }) {
+export async function createTextMessage({ conversationId, senderRole, senderId, body }) {
   const message = await Message.create({
-    appointmentId,
+    conversationId,
     senderRole,
     senderId: senderId.toString(),
     body,
@@ -47,9 +47,9 @@ export async function createTextMessage({ appointmentId, senderRole, senderId, b
   return getMessageById(message._id.toString());
 }
 
-export async function createFileMessage({ appointmentId, senderRole, senderId, fileUrl, fileName, fileType }) {
+export async function createFileMessage({ conversationId, senderRole, senderId, fileUrl, fileName, fileType }) {
   const message = await Message.create({
-    appointmentId,
+    conversationId,
     senderRole,
     senderId: senderId.toString(),
     fileUrl,
