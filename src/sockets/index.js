@@ -4,6 +4,10 @@ export function appointmentRoom(appointmentId) {
   return `appointment:${appointmentId}`;
 }
 
+export function actorRoom({ role, actorId }) {
+  return `actor:${role}:${actorId}`;
+}
+
 export function registerSockets(io) {
   io.on("connection", (socket) => {
     socket.on("join", async ({ appointmentId, role, actorId }) => {
@@ -16,6 +20,7 @@ export function registerSockets(io) {
       if (!allowed.ok) return;
 
       socket.join(appointmentRoom(id));
+      socket.join(actorRoom({ role: actorRole, actorId: actorStr.trim() }));
       socket.emit("joined", { appointmentId: id });
     });
   });

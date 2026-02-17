@@ -8,6 +8,7 @@ import { parseActor } from "../utils/actor.js";
 import { assertActorInAppointment } from "../services/appointmentService.js";
 import { createFileMessage, createTextMessage, listMessages } from "../services/chatService.js";
 import { getReadSummary, markMessagesSeen } from "../services/chatReadService.js";
+import { actorRoom } from "../sockets/index.js";
 
 export function createChatRouter({ io }) {
   const router = Router();
@@ -71,6 +72,14 @@ export function createChatRouter({ io }) {
     });
 
     io.to(roomName(appointmentId)).emit("message:new", { message });
+
+    const otherRole = actor.role === "patient" ? "therapist" : "patient";
+    const otherActorId =
+      actor.role === "patient" ? allowed.appointment.therapistId : allowed.appointment.patientId;
+    if (otherActorId) {
+      io.to(actorRoom({ role: otherRole, actorId: otherActorId.toString() })).emit("message:new", { message });
+    }
+
     res.json({ message });
   });
 
@@ -99,6 +108,13 @@ export function createChatRouter({ io }) {
 
     io.to(roomName(appointmentId)).emit("message:new", { message });
 
+    const otherRole = actor.role === "patient" ? "therapist" : "patient";
+    const otherActorId =
+      actor.role === "patient" ? allowed.appointment.therapistId : allowed.appointment.patientId;
+    if (otherActorId) {
+      io.to(actorRoom({ role: otherRole, actorId: otherActorId.toString() })).emit("message:new", { message });
+    }
+
     const base = env.uploads.publicBaseUrl || `http://localhost:${env.port}`;
     res.json({ message, publicUrl: `${base}${urlPath}` });
   });
@@ -125,6 +141,17 @@ export function createChatRouter({ io }) {
     });
 
     io.to(roomName(appointmentId)).emit("read:updated", { appointmentId, reads });
+
+    const otherRole = actor.role === "patient" ? "therapist" : "patient";
+    const otherActorId =
+      actor.role === "patient" ? allowed.appointment.therapistId : allowed.appointment.patientId;
+    if (otherActorId) {
+      io.to(actorRoom({ role: otherRole, actorId: otherActorId.toString() })).emit("read:updated", {
+        appointmentId,
+        reads,
+      });
+    }
+
     res.json({ ok: true, reads });
   });
 
