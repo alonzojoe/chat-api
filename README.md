@@ -74,6 +74,40 @@ Because this is a prototype (no auth middleware yet), we pass `role` and `actorI
 > Note: `conversationId` is the thread id (string) and is used to link messages. `actorId` is also a string.
 > The therapist sidebar should use **List conversations** (below) to show all chats.
 
+### Schema
+
+**conversations**
+```json
+{
+  "_id": "ObjectId",
+  "clientId": "string",
+  "clientName": "string",
+  "therapistId": "string",
+  "therapistName": "string",
+  "createdAt": "Date",
+  "updatedAt": "Date"
+}
+```
+
+**messages**
+```json
+{
+  "_id": "ObjectId",
+  "conversationId": "string",
+  "senderRole": "patient|therapist",
+  "senderId": "string",
+  "body": "string|null",
+  "fileUrl": "string|null",
+  "fileName": "string|null",
+  "fileType": "string|null",
+  "seenAt": "Date|null",
+  "createdAt": "Date",
+  "updatedAt": "Date"
+}
+```
+
+> Note → In real implementation, **remove** `clientName` and `therapistName` from `conversations` and resolve names from your user service.
+
 ### Endpoints table (with samples)
 
 | Method | Path | Required params | Sample request | Sample response |
