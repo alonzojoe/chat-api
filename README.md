@@ -16,10 +16,10 @@ chat-api/
       env.js
       db.js
     routes/
-      appointments.js
+      conversations.js
       chat.js
     services/
-      appointmentService.js
+      conversationService.js
       chatService.js
     sockets/
       index.js
@@ -56,6 +56,14 @@ cp .env.example .env
 npm run dev
 ```
 
+Seed demo data (optional):
+
+```bash
+npm run seed:mongo
+# or wipe then seed
+npm run seed:mongo -- --wipe
+```
+
 Health:
 - `GET http://localhost:4000/health`
 
@@ -63,8 +71,8 @@ Health:
 
 Because this is a prototype (no auth middleware yet), we pass `role` and `actorId` in query/body.
 
-> Note: `appointmentId` is an external ID (string) and is used to link messages. `actorId` is also a string.
-> The therapist sidebar should use **List appointments** (below) to show all chats.
+> Note: `conversationId` is the thread id (string) and is used to link messages. `actorId` is also a string.
+> The therapist sidebar should use **List conversations** (below) to show all chats.
 
 ### Endpoints table (with samples)
 
@@ -86,13 +94,13 @@ Because this is a prototype (no auth middleware yet), we pass `role` and `actorI
 Therapist:
 
 ```bash
-curl "http://localhost:4000/api/conversations?role=therapist&actorId=10"
+curl "http://localhost:4000/api/conversations?role=therapist&actorId=therapist_10"
 ```
 
 Patient:
 
 ```bash
-curl "http://localhost:4000/api/conversations?role=patient&actorId=1"
+curl "http://localhost:4000/api/conversations?role=patient&actorId=patient_1"
 ```
 
 #### Create conversation
@@ -111,7 +119,7 @@ curl -X POST http://localhost:4000/api/conversations \
 #### Load messages
 
 ```bash
-curl "http://localhost:4000/api/chat/messages?conversationId=<conversationId>&role=therapist&actorId=10"
+curl "http://localhost:4000/api/chat/messages?conversationId=<conversationId>&role=therapist&actorId=therapist_10"
 ```
 
 #### Send message
@@ -119,7 +127,7 @@ curl "http://localhost:4000/api/chat/messages?conversationId=<conversationId>&ro
 ```bash
 curl -X POST http://localhost:4000/api/chat/message \
   -H 'Content-Type: application/json' \
-  -d '{"conversationId":"<conversationId>","role":"patient","actorId":1,"body":"Hello doc"}'
+  -d '{"conversationId":"<conversationId>","role":"patient","actorId":"patient_1","body":"Hello doc"}'
 ```
 
 #### Upload file
@@ -128,7 +136,7 @@ curl -X POST http://localhost:4000/api/chat/message \
 curl -X POST http://localhost:4000/api/chat/upload \
   -F conversationId=<conversationId> \
   -F role=patient \
-  -F actorId=1 \
+  -F actorId=patient_1 \
   -F file=@/path/to/image.jpg
 ```
 
