@@ -10,6 +10,14 @@ export function actorRoom({ role, actorId }) {
 
 export function registerSockets(io) {
   io.on("connection", (socket) => {
+    socket.on("join:actor", async ({ role, actorId }) => {
+      const actorRole = (role || "").toString();
+      const actorStr = (actorId || "").toString();
+      if (!actorStr.trim() || !["patient", "therapist"].includes(actorRole)) return;
+      socket.join(actorRoom({ role: actorRole, actorId: actorStr.trim() }));
+      socket.emit("actor:joined", { role: actorRole, actorId: actorStr.trim() });
+    });
+
     socket.on("join", async ({ appointmentId, role, actorId }) => {
       const id = (appointmentId || "").toString();
       const actorRole = (role || "").toString();
