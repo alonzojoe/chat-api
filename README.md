@@ -67,6 +67,7 @@ Health:
 Because this is a prototype (no auth middleware yet), we pass `role` and `actorId` in query/body.
 
 > Note: `appointmentId` is an external ID (string) and is used to link messages. `actorId` is also a string.
+> The therapist sidebar should use **List appointments** (below) to show all chats.
 
 ### List appointments (sidebar)
 
@@ -80,6 +81,30 @@ Patient:
 
 ```bash
 curl "http://localhost:4000/api/appointments?role=patient&actorId=1"
+```
+
+### Create appointment
+
+```bash
+curl -X POST http://localhost:4000/api/appointments \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "appointmentId":"<mongo-appointment-id>",
+    "patientId":"patient_1",
+    "patientName":"John Cruz",
+    "therapistId":"therapist_10",
+    "therapistName":"Dr. Reyes",
+    "startsAt":"2026-02-12 12:06:42",
+    "appointmentDateTime":"2026-02-12T12:06:42.879Z"
+  }'
+```
+
+### Update appointment status
+
+```bash
+curl -X PATCH http://localhost:4000/api/appointments/status \
+  -H 'Content-Type: application/json' \
+  -d '{"appointmentId":"<mongo-appointment-id>","status":"completed"}'
 ```
 
 ### Load messages
@@ -106,6 +131,20 @@ curl -X POST http://localhost:4000/api/chat/upload \
   -F file=@/path/to/image.jpg
 ```
 
+### Mark messages as read
+
+```bash
+curl -X POST http://localhost:4000/api/chat/read \
+  -H 'Content-Type: application/json' \
+  -d '{"appointmentId":"<appointmentId>","role":"therapist","actorId":"therapist_10","lastReadMessageId":"<messageId>"}'
+```
+
+### Get read summary
+
+```bash
+curl "http://localhost:4000/api/chat/read?appointmentId=<appointmentId>&role=therapist&actorId=therapist_10"
+```
+
 ## 5) Socket.IO events
 
 Client emits:
@@ -114,3 +153,4 @@ Client emits:
 Server emits:
 - `joined` `{ appointmentId }`
 - `message:new` `{ message }`
+- `read:updated` `{ appointmentId, reads }`
