@@ -12,25 +12,25 @@ function getOtherRole(role) {
   return role === "patient" ? "therapist" : "patient";
 }
 
-export async function getReadSummary({ appointmentId, role }) {
+export async function getReadSummary({ conversationId, role }) {
   const otherRole = getOtherRole(role);
-  const unreadCount = await Message.countDocuments({ appointmentId, senderRole: otherRole, seenAt: null });
+  const unreadCount = await Message.countDocuments({ conversationId, senderRole: otherRole, seenAt: null });
 
-  const lastSeen = await Message.findOne({ appointmentId, senderRole: otherRole, seenAt: { $ne: null } })
+  const lastSeen = await Message.findOne({ conversationId, senderRole: otherRole, seenAt: { $ne: null } })
     .sort({ seenAt: -1 })
     .lean();
 
   return {
-    appointmentId: appointmentId.toString(),
+    conversationId: conversationId.toString(),
     unreadCount,
     lastSeenAt: formatDate(lastSeen?.seenAt),
   };
 }
 
-export async function markMessagesSeen({ appointmentId, role, lastReadMessageId }) {
+export async function markMessagesSeen({ conversationId, role, lastReadMessageId }) {
   const otherRole = getOtherRole(role);
   const filter = {
-    appointmentId,
+    conversationId,
     senderRole: otherRole,
     seenAt: null,
   };
@@ -44,7 +44,7 @@ export async function markMessagesSeen({ appointmentId, role, lastReadMessageId 
 
   const result = await Message.updateMany(filter, { $set: { seenAt: new Date() } });
 
-  const summary = await getReadSummary({ appointmentId, role });
+  const summary = await getReadSummary({ conversationId, role });
   return {
     ...summary,
     updatedCount: result?.modifiedCount ?? result?.nModified ?? 0,

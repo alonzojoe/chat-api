@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { env } from "./config/env.js";
-import { appointmentsRouter } from "./routes/appointments.js";
+import { conversationsRouter } from "./routes/conversations.js";
 import { createChatRouter } from "./routes/chat.js";
 
 export function createApp({ io }) {
@@ -34,7 +34,7 @@ export function createApp({ io }) {
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
 
-  app.use("/api/appointments", appointmentsRouter);
+  app.use("/api/conversations", conversationsRouter);
   app.use("/api/chat", createChatRouter({ io }));
 
   return app;
