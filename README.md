@@ -42,7 +42,7 @@ chat-api/
    ```
 2. Default DB name used: `chat_db` (see `MONGO_URI` in `.env`)
 
-> Note: conversations store `clientName` and `therapistName` for fast sidebar display in this prototype.
+> Note: conversations only store `clientId` and `therapistId`. Use your main DB to resolve names for display.
 
 ## 2) Configure env
 
@@ -81,9 +81,7 @@ Because this is a prototype (no auth middleware yet), we pass `role` and `actorI
 {
   "_id": "ObjectId",
   "clientId": "string",
-  "clientName": "string",
   "therapistId": "string",
-  "therapistName": "string",
   "createdAt": "Date",
   "updatedAt": "Date"
 }
@@ -106,16 +104,29 @@ Because this is a prototype (no auth middleware yet), we pass `role` and `actorI
 }
 ```
 
-> Note → In real implementation, **remove** `clientName` and `therapistName` from `conversations` and connect the `clientId` and `therapistId` to your current database.
+> Note → Names are no longer stored in `conversations`. Resolve names from your main DB using `clientId`/`therapistId`.
 
+### Migration (remove old name fields)
+
+If your existing DB has `clientName` / `therapistName`, run:
+
+```bash
+npm run migrate:remove-names
+```
+
+Or in Mongo shell:
+
+```js
+db.conversations.updateMany({}, { $unset: { clientName: "", therapistName: "" } })
+```
 
 ### Endpoints table (with samples)
 
 | Method | Path | Required params | Sample request | Sample response |
 | --- | --- | --- | --- | --- |
 | GET | `/health` | none | `GET /health` | `{ "ok": true }` |
-| GET | `/api/conversations` | **query:** `role`, `actorId` | `GET /api/conversations?role=therapist&actorId=therapist_10` | `{ "conversations": [ { "conversationId": "65c1e6...", "clientId": "patient_1", "clientName": "John Cruz", "therapistId": "therapist_10", "therapistName": "Dr. Reyes", "lastMessage": "Hi doc", "lastMessageAt": "2026-02-12 12:10:00", "unreadCount": 2 } ] }` |
-| POST | `/api/conversations` | **body:** `clientId`, `clientName`, `therapistId`, `therapistName` | `{ "clientId": "patient_1", "clientName": "John Cruz", "therapistId": "therapist_10", "therapistName": "Dr. Reyes" }` | `{ "ok": true, "id": "65c1e6...", "existing": false }` |
+| GET | `/api/conversations` | **query:** `role`, `actorId` | `GET /api/conversations?role=therapist&actorId=therapist_10` | `{ "conversations": [ { "conversationId": "65c1e6...", "clientId": "patient_1", "therapistId": "therapist_10", "lastMessage": "Hi doc", "lastMessageAt": "2026-02-12 12:10:00", "unreadCount": 2 } ] }` |
+| POST | `/api/conversations` | **body:** `clientId`, `therapistId` | `{ "clientId": "patient_1", "therapistId": "therapist_10" }` | `{ "ok": true, "id": "65c1e6...", "existing": false }` |
 | GET | `/api/chat/messages` | **query:** `conversationId`, `role`, `actorId` | `GET /api/chat/messages?conversationId=65c1e6...&role=therapist&actorId=therapist_10` | `{ "messages": [ { "id": "66a1...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "body": "Hello doc", "fileUrl": null, "fileName": null, "fileType": null, "createdAt": "2026-02-12 12:07:10", "seenAt": null } ] }` |
 | POST | `/api/chat/message` | **body:** `conversationId`, `role`, `actorId`, `body` | `{ "conversationId": "65c1e6...", "role": "patient", "actorId": "patient_1", "body": "Hello doc" }` | `{ "message": { "id": "66a1...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "body": "Hello doc", "createdAt": "2026-02-12 12:07:10", "seenAt": null } }` |
 | POST | `/api/chat/upload` | **form:** `conversationId`, `role`, `actorId`, `file` | `multipart/form-data` | `{ "message": { "id": "66a2...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "fileUrl": "/uploads/1700000000-abc.jpg", "fileName": "scan.jpg", "fileType": "image/jpeg", "createdAt": "2026-02-12 12:08:00", "seenAt": null }, "publicUrl": "http://localhost:4000/uploads/1700000000-abc.jpg" }` |
@@ -145,9 +156,7 @@ curl -X POST http://localhost:4000/api/conversations \
   -H 'Content-Type: application/json' \
   -d '{
     "clientId":"patient_1",
-    "clientName":"John Cruz",
-    "therapistId":"therapist_10",
-    "therapistName":"Dr. Reyes"
+    "therapistId":"therapist_10"
   }'
 ```
 

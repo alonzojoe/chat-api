@@ -14,23 +14,17 @@ conversationsRouter.get("/", async (req, res) => {
 });
 
 // POST /api/conversations
-// { clientId, clientName, therapistId, therapistName }
+// { clientId, therapistId }
 conversationsRouter.post("/", async (req, res) => {
   const clientId = (req.body.clientId || "").toString();
-  const clientName = (req.body.clientName || "").toString();
   const therapistId = (req.body.therapistId || "").toString();
-  const therapistName = (req.body.therapistName || "").toString();
 
   if (!clientId.trim()) return res.status(400).json({ error: "clientId required" });
-  if (!clientName.trim()) return res.status(400).json({ error: "clientName required" });
   if (!therapistId.trim()) return res.status(400).json({ error: "therapistId required" });
-  if (!therapistName.trim()) return res.status(400).json({ error: "therapistName required" });
 
   const result = await createConversation({
     clientId: clientId.trim(),
-    clientName: clientName.trim(),
     therapistId: therapistId.trim(),
-    therapistName: therapistName.trim(),
   });
 
   res.json({ ok: true, ...result });

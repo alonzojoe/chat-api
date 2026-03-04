@@ -14,17 +14,19 @@ export function createApp({ io }) {
     .map((v) => v.trim())
     .filter(Boolean);
 
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        if (!origin) return callback(null, true); // allow non-browser tools
-        if (corsOrigins.includes("*")) return callback(null, true);
-        if (corsOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error("CORS blocked"));
-      },
-      credentials: true,
-    })
-  );
+  if (env.enableCors) {
+    app.use(
+      cors({
+        origin: (origin, callback) => {
+          if (!origin) return callback(null, true); // allow non-browser tools
+          if (corsOrigins.includes("*")) return callback(null, true);
+          if (corsOrigins.includes(origin)) return callback(null, true);
+          return callback(new Error("CORS blocked"));
+        },
+        credentials: true,
+      })
+    );
+  }
   app.use(express.json({ limit: "2mb" }));
 
   // uploads static

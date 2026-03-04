@@ -7,9 +7,10 @@ import { registerSockets } from "./sockets/index.js";
 
 const server = http.createServer();
 
-const io = new SocketIOServer(server, {
-  cors: { origin: env.corsOrigin, credentials: true },
-});
+const io = new SocketIOServer(
+  server,
+  env.enableCors ? { cors: { origin: env.corsOrigin, credentials: true } } : undefined
+);
 
 registerSockets(io);
 
