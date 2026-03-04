@@ -17,9 +17,7 @@ async function seed() {
     {
       $setOnInsert: {
         clientId: "patient_1",
-        clientName: "John Cruz",
         therapistId: "therapist_10",
-        therapistName: "Dr. Reyes",
       },
     },
     { new: true, upsert: true }
@@ -30,9 +28,7 @@ async function seed() {
     {
       $setOnInsert: {
         clientId: "patient_2",
-        clientName: "Ana Santos",
         therapistId: "therapist_10",
-        therapistName: "Dr. Reyes",
       },
     },
     { new: true, upsert: true }

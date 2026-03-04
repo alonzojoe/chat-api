@@ -58,9 +58,7 @@ export async function listConversationsForActor({ role, actorId }) {
       return {
         conversationId: convo._id.toString(),
         clientId: convo.clientId,
-        clientName: convo.clientName,
         therapistId: convo.therapistId,
-        therapistName: convo.therapistName,
         lastMessage: lastMessagePreview(lastMessage),
         lastMessageAt: formatDate(lastMessage?.createdAt),
         unreadCount,
@@ -75,15 +73,13 @@ export async function listConversationsForActor({ role, actorId }) {
   });
 }
 
-export async function createConversation({ clientId, clientName, therapistId, therapistName }) {
+export async function createConversation({ clientId, therapistId }) {
   const existing = await getConversationByPair({ clientId, therapistId });
   if (existing) return { id: existing._id.toString(), existing: true };
 
   const created = await Conversation.create({
     clientId,
-    clientName,
     therapistId,
-    therapistName,
   });
 
   return { id: created._id.toString(), existing: false };
