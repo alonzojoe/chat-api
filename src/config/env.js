@@ -4,6 +4,7 @@ export const env = {
   port: Number(process.env.PORT || 4000),
   enableCors: (process.env.ENABLE_CORS || 'true').toLowerCase() === 'true',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  authKey: process.env.AUTH_KEY || '',
 
   mongo: {
     uri: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/chat_db",

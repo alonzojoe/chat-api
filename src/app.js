@@ -29,6 +29,15 @@ export function createApp({ io }) {
   }
   app.use(express.json({ limit: "2mb" }));
 
+  // simple API key auth (optional)
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') return next();
+    if (!env.authKey) return next();
+    const key = req.header('x-auth-key');
+    if (key && key === env.authKey) return next();
+    return res.status(401).json({ error: 'Unauthorized' });
+  });
+
   // uploads static
   const uploadDir = path.resolve(process.cwd(), env.uploads.dir);
   fs.mkdirSync(uploadDir, { recursive: true });
