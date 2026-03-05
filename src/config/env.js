@@ -20,4 +20,14 @@ export const env = {
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
     max: Number(process.env.RATE_LIMIT_MAX || 300),
   },
+
+  s3: {
+    enabled: (process.env.USE_S3 || "false").toLowerCase() === "true",
+    bucket: process.env.S3_BUCKET || "",
+    region: process.env.AWS_REGION || process.env.S3_REGION || "",
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+    publicBaseUrl: (process.env.S3_PUBLIC_BASE_URL || "").replace(/\/$/, ""),
+    publicRead: (process.env.S3_PUBLIC_READ || "false").toLowerCase() === "true",
+  },
 };
