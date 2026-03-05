@@ -17,10 +17,12 @@ services:
     env_file:
       - .env
     environment:
-      MONGO_URI: mongodb://mongo:27017/chat_db
       # optional: override these if needed
-      # ENABLE_CORS: "true"
-      # CORS_ORIGIN: http://localhost:3000
+      ENABLE_CORS: "true"
+      CORS_ORIGIN: http://localhost:3000
+      AUTH_KEY: TuJOoz/xjp1hzZFClLzWhp0rUNPMmjFwZZ3sOAtAzzI=
+      UPLOAD_DIR: uploads
+      PUBLIC_BASE_URL: http://localhost:4000
     depends_on:
       - mongo
 
