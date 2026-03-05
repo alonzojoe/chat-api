@@ -22,6 +22,7 @@ export const env = {
   },
 
   s3: {
+    enabled: (process.env.USE_S3 || "false").toLowerCase() === "true",
     bucket: process.env.S3_BUCKET || "",
     region: process.env.AWS_REGION || process.env.S3_REGION || "",
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",

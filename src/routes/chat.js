@@ -18,7 +18,7 @@ export function createChatRouter({ io }) {
   const uploadDir = path.resolve(process.cwd(), env.uploads.dir);
   fs.mkdirSync(uploadDir, { recursive: true });
 
-  const s3Enabled = Boolean(env.s3.bucket);
+  const s3Enabled = env.s3.enabled && Boolean(env.s3.bucket);
 
   const storage = s3Enabled
     ? multer.memoryStorage()
@@ -127,7 +127,6 @@ export function createChatRouter({ io }) {
         Key: key,
         Body: req.file.buffer,
         ContentType: req.file.mimetype,
-        ...(env.s3.publicRead ? { ACL: "public-read" } : {}),
       });
 
       await s3Client.send(putCommand);
