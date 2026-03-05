@@ -1,5 +1,7 @@
+//app.js
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import path from "path";
 import fs from "fs";
 import { env } from "./config/env.js";
@@ -28,6 +30,15 @@ export function createApp({ io }) {
     );
   }
   app.use(express.json({ limit: "2mb" }));
+
+  app.use(
+    rateLimit({
+      windowMs: env.rateLimit.windowMs,
+      max: env.rateLimit.max,
+      standardHeaders: true,
+      legacyHeaders: false,
+    })
+  );
 
   // simple API key auth (optional)
   app.use((req, res, next) => {
