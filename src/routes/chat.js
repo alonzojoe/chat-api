@@ -3,6 +3,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "../config/env.js";
 import { parseActor } from "../utils/actor.js";
 import { assertActorInConversation } from "../services/conversationService.js";
@@ -17,19 +18,36 @@ export function createChatRouter({ io }) {
   const uploadDir = path.resolve(process.cwd(), env.uploads.dir);
   fs.mkdirSync(uploadDir, { recursive: true });
 
-  const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadDir),
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname || "");
-      const name = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
-      cb(null, name);
-    },
-  });
+  const s3Enabled = Boolean(env.s3.bucket);
+
+  const storage = s3Enabled
+    ? multer.memoryStorage()
+    : multer.diskStorage({
+        destination: (_req, _file, cb) => cb(null, uploadDir),
+        filename: (_req, file, cb) => {
+          const ext = path.extname(file.originalname || "");
+          const name = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
+          cb(null, name);
+        },
+      });
 
   const upload = multer({
     storage,
     limits: { fileSize: env.uploads.maxFileSizeBytes },
   });
+
+  const s3Client = s3Enabled
+    ? new S3Client({
+        region: env.s3.region,
+        credentials:
+          env.s3.accessKeyId && env.s3.secretAccessKey
+            ? {
+                accessKeyId: env.s3.accessKeyId,
+                secretAccessKey: env.s3.secretAccessKey,
+              }
+            : undefined,
+      })
+    : null;
 
   function roomName(conversationId) {
     return `conversation:${conversationId}`;
@@ -95,13 +113,39 @@ export function createChatRouter({ io }) {
     const allowed = await assertActorInConversation({ conversationId, role: actor.role, actorId: actor.actorId });
     if (!allowed.ok) return res.status(allowed.status).json({ error: allowed.error });
 
-    const urlPath = `/uploads/${req.file.filename}`;
+    let fileUrl = "";
+    let publicUrl = "";
+
+    if (s3Enabled) {
+      if (!env.s3.region) return res.status(500).json({ error: "S3 region not configured" });
+      const ext = path.extname(req.file.originalname || "");
+      const key = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
+      const base = env.s3.publicBaseUrl || `https://${env.s3.bucket}.s3.${env.s3.region}.amazonaws.com`;
+
+      const putCommand = new PutObjectCommand({
+        Bucket: env.s3.bucket,
+        Key: key,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+        ...(env.s3.publicRead ? { ACL: "public-read" } : {}),
+      });
+
+      await s3Client.send(putCommand);
+
+      publicUrl = `${base}/${key}`;
+      fileUrl = publicUrl;
+    } else {
+      const urlPath = `/uploads/${req.file.filename}`;
+      const base = env.uploads.publicBaseUrl || `http://localhost:${env.port}`;
+      publicUrl = `${base}${urlPath}`;
+      fileUrl = urlPath;
+    }
 
     const message = await createFileMessage({
       conversationId: conversationId.trim(),
       senderRole: actor.role,
       senderId: actor.actorId,
-      fileUrl: urlPath,
+      fileUrl,
       fileName: req.file.originalname,
       fileType: req.file.mimetype,
     });
@@ -115,8 +159,7 @@ export function createChatRouter({ io }) {
       io.to(actorRoom({ role: otherRole, actorId: otherActorId.toString() })).emit("message:new", { message });
     }
 
-    const base = env.uploads.publicBaseUrl || `http://localhost:${env.port}`;
-    res.json({ message, publicUrl: `${base}${urlPath}` });
+    res.json({ message, publicUrl });
   });
 
   // POST /api/chat/read
