@@ -15,4 +15,9 @@ export const env = {
     publicBaseUrl: (process.env.PUBLIC_BASE_URL || "").replace(/\/$/, ""),
     maxFileSizeBytes: 15 * 1024 * 1024,
   },
+
+  rateLimit: {
+    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+    max: Number(process.env.RATE_LIMIT_MAX || 300),
+  },
 };
