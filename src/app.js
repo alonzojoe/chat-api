@@ -32,6 +32,8 @@ export function createApp({ io }) {
   // simple API key auth (optional)
   app.use((req, res, next) => {
     if (req.method === 'OPTIONS') return next();
+    if (req.path.startsWith('/uploads')) return next();
+    if (req.path === '/health') return next();
     if (!env.authKey) return next();
     const key = req.header('x-auth-key');
     if (key && key === env.authKey) return next();
