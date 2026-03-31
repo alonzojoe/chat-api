@@ -59,7 +59,7 @@ export function createApp({ io }) {
   app.get("/health", (_req, res) => res.json({ ok: true }));
 
   app.use("/api/conversations", conversationsRouter);
-  app.use("/api/chat", createChatRouter({ io }));
+  app.use("/api", createChatRouter({ io }));
 
   // basic error handler
   app.use((err, req, res, _next) => {

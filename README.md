@@ -127,11 +127,11 @@ db.conversations.updateMany({}, { $unset: { clientName: "", therapistName: "" } 
 | GET | `/health` | none | `GET /health` | `{ "ok": true }` |
 | GET | `/api/conversations` | **query:** `role`, `actorId` | `GET /api/conversations?role=therapist&actorId=therapist_10` | `{ "conversations": [ { "conversationId": "65c1e6...", "clientId": "patient_1", "therapistId": "therapist_10", "lastMessage": "Hi doc", "lastMessageAt": "2026-02-12 12:10:00", "unreadCount": 2 } ] }` |
 | POST | `/api/conversations` | **body:** `clientId`, `therapistId` | `{ "clientId": "patient_1", "therapistId": "therapist_10" }` | `{ "ok": true, "id": "65c1e6...", "existing": false }` |
-| GET | `/api/chat/messages` | **query:** `conversationId`, `role`, `actorId` | `GET /api/chat/messages?conversationId=65c1e6...&role=therapist&actorId=therapist_10` | `{ "messages": [ { "id": "66a1...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "body": "Hello doc", "fileUrl": null, "fileName": null, "fileType": null, "createdAt": "2026-02-12 12:07:10", "seenAt": null } ] }` |
-| POST | `/api/chat/message` | **body:** `conversationId`, `role`, `actorId`, `body` | `{ "conversationId": "65c1e6...", "role": "patient", "actorId": "patient_1", "body": "Hello doc" }` | `{ "message": { "id": "66a1...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "body": "Hello doc", "createdAt": "2026-02-12 12:07:10", "seenAt": null } }` |
-| POST | `/api/chat/upload` | **form:** `conversationId`, `role`, `actorId`, `file` | `multipart/form-data` | `{ "message": { "id": "66a2...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "fileUrl": "/uploads/1700000000-abc.jpg", "fileName": "scan.jpg", "fileType": "image/jpeg", "createdAt": "2026-02-12 12:08:00", "seenAt": null }, "publicUrl": "http://localhost:4000/uploads/1700000000-abc.jpg" }` |
-| POST | `/api/chat/read` | **body:** `conversationId`, `role`, `actorId` | `{ "conversationId": "65c1e6...", "role": "therapist", "actorId": "therapist_10", "lastReadMessageId": "66a1..." }` | `{ "ok": true, "reads": { "conversationId": "65c1e6...", "unreadCount": 0, "lastSeenAt": "2026-02-12 12:09:00", "updatedCount": 2 } }` |
-| GET | `/api/chat/read` | **query:** `conversationId`, `role`, `actorId` | `GET /api/chat/read?conversationId=65c1e6...&role=therapist&actorId=therapist_10` | `{ "reads": { "conversationId": "65c1e6...", "unreadCount": 1, "lastSeenAt": "2026-02-12 12:09:00" } }` |
+| GET | `/api/messages` | **query:** `conversationId`, `role`, `actorId` | `GET /api/messages?conversationId=65c1e6...&role=therapist&actorId=therapist_10` | `{ "messages": [ { "id": "66a1...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "body": "Hello doc", "fileUrl": null, "fileName": null, "fileType": null, "createdAt": "2026-02-12 12:07:10", "seenAt": null } ] }` |
+| POST | `/api/message` | **body:** `conversationId`, `role`, `actorId`, `body` | `{ "conversationId": "65c1e6...", "role": "patient", "actorId": "patient_1", "body": "Hello doc" }` | `{ "message": { "id": "66a1...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "body": "Hello doc", "createdAt": "2026-02-12 12:07:10", "seenAt": null } }` |
+| POST | `/api/upload` | **form:** `conversationId`, `role`, `actorId`, `file` | `multipart/form-data` | `{ "message": { "id": "66a2...", "conversationId": "65c1e6...", "senderRole": "patient", "senderId": "patient_1", "fileUrl": "/uploads/1700000000-abc.jpg", "fileName": "scan.jpg", "fileType": "image/jpeg", "createdAt": "2026-02-12 12:08:00", "seenAt": null }, "publicUrl": "http://localhost:4000/uploads/1700000000-abc.jpg" }` |
+| POST | `/api/read` | **body:** `conversationId`, `role`, `actorId` | `{ "conversationId": "65c1e6...", "role": "therapist", "actorId": "therapist_10", "lastReadMessageId": "66a1..." }` | `{ "ok": true, "reads": { "conversationId": "65c1e6...", "unreadCount": 0, "lastSeenAt": "2026-02-12 12:09:00", "updatedCount": 2 } }` |
+| GET | `/api/read` | **query:** `conversationId`, `role`, `actorId` | `GET /api/read?conversationId=65c1e6...&role=therapist&actorId=therapist_10` | `{ "reads": { "conversationId": "65c1e6...", "unreadCount": 1, "lastSeenAt": "2026-02-12 12:09:00" } }` |
 
 ### Examples
 
@@ -163,13 +163,13 @@ curl -X POST http://localhost:4000/api/conversations \
 #### Load messages
 
 ```bash
-curl "http://localhost:4000/api/chat/messages?conversationId=<conversationId>&role=therapist&actorId=therapist_10"
+curl "http://localhost:4000/api/messages?conversationId=<conversationId>&role=therapist&actorId=therapist_10"
 ```
 
 #### Send message
 
 ```bash
-curl -X POST http://localhost:4000/api/chat/message \
+curl -X POST http://localhost:4000/api/message \
   -H 'Content-Type: application/json' \
   -d '{"conversationId":"<conversationId>","role":"patient","actorId":"patient_1","body":"Hello doc"}'
 ```
@@ -177,7 +177,7 @@ curl -X POST http://localhost:4000/api/chat/message \
 #### Upload file
 
 ```bash
-curl -X POST http://localhost:4000/api/chat/upload \
+curl -X POST http://localhost:4000/api/upload \
   -F conversationId=<conversationId> \
   -F role=patient \
   -F actorId=patient_1 \
@@ -187,7 +187,7 @@ curl -X POST http://localhost:4000/api/chat/upload \
 #### Mark messages as read
 
 ```bash
-curl -X POST http://localhost:4000/api/chat/read \
+curl -X POST http://localhost:4000/api/read \
   -H 'Content-Type: application/json' \
   -d '{"conversationId":"<conversationId>","role":"therapist","actorId":"therapist_10","lastReadMessageId":"<messageId>"}'
 ```
@@ -195,7 +195,7 @@ curl -X POST http://localhost:4000/api/chat/read \
 #### Get read summary
 
 ```bash
-curl "http://localhost:4000/api/chat/read?conversationId=<conversationId>&role=therapist&actorId=therapist_10"
+curl "http://localhost:4000/api/read?conversationId=<conversationId>&role=therapist&actorId=therapist_10"
 ```
 
 ## 5) Socket.IO events
