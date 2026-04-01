@@ -19,9 +19,6 @@ permissions:
 env:
   AWS_REGION: il-central-1
   ECR_REPOSITORY: unicare/chat-api
-  # Third-party actions (e.g. aws-actions/*) until they ship Node 24 builds; see:
-  # https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   test:
@@ -59,7 +56,7 @@ jobs:
           echo "arn=$ARN" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ steps.role.outputs.arn }}
           aws-region: ${{ env.AWS_REGION }}
@@ -67,7 +64,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2.1.1
 
       - name: Build, tag, and push image
         env:
