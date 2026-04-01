@@ -3,13 +3,13 @@
 Prototype 1:1 **conversation chat** (client ↔ therapist) with **files**.
 
 - Node.js + Express
-- MongoDB (local dev, or **MongoDB Atlas** in production via `MONGO_URI` from AWS Secrets Manager / Unicare Terraform)
+- MongoDB (local dev, or **Amazon DocumentDB** in production via `MONGO_URI` from AWS Secrets Manager / Unicare Terraform)
 - Socket.IO realtime
 - Uploads stored locally in `uploads/`
 
 ## Production (Unicare / AWS App Runner)
 
-Unicare Terraform provisions **MongoDB Atlas** (M0 by default) and stores **`MONGO_URI`** in Secrets Manager; App Runner injects it into this container. See the **`unicare_zone`** repo (`infra/mongodb-atlas`, `infra/chat-api`). CI pushes the image to **ECR** `unicare/chat-api`.
+Unicare Terraform provisions **Amazon DocumentDB** and stores **`MONGO_URI`** in Secrets Manager; App Runner injects it (with **`MONGO_TLS_CA_FILE`** for TLS). See the **`unicare-zone`** repo (`infra/documentdb`, `infra/chat-api`). CI pushes the image to **ECR** `unicare/chat-api`.
 
 ### GitHub Actions → ECR (OIDC)
 
