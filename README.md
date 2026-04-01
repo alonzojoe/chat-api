@@ -11,6 +11,14 @@ Prototype 1:1 **conversation chat** (client ↔ therapist) with **files**.
 
 Unicare Terraform provisions **MongoDB Atlas** (M0 by default) and stores **`MONGO_URI`** in Secrets Manager; App Runner injects it into this container. See the **`unicare_zone`** repo (`infra/mongodb-atlas`, `infra/chat-api`). CI pushes the image to **ECR** `unicare/chat-api`.
 
+### GitHub Actions → ECR (OIDC)
+
+If the workflow fails with **“Credentials could not be loaded”**:
+
+1. **Set the role ARN** — In GitHub: **Settings → Secrets and variables → Actions**. Under **Variables** (or **Secrets**), add **`AWS_DEPLOY_ROLE_ARN`** = the value of Terraform output **`github_actions_ecr_role_arn`** from `unicare_zone/infra/github-actions` (for example `arn:aws:iam::ACCOUNT:role/github-actions-unicare-chat-api-ecr`). An **empty** value causes that error.
+2. **Repo must match Terraform** — `unicare_zone/projects.yaml` must use **`github_org` / `github_repo`** that match this repository (e.g. `alonzojoe` / `chat-api`). Re-apply **`infra/github-actions`** after changing them.
+3. **OIDC permission** — The workflow sets top-level **`permissions: id-token: write`**. Do not override this in org-level workflow policies to **`read-all`** only, or OIDC tokens will not be issued.
+
 ## Folder structure
 
 ```

@@ -1,5 +1,8 @@
-# Set repository variable AWS_DEPLOY_ROLE_ARN to the ARN output by
-# unicare_zone infra/github-actions (github_actions_ecr_role_arn).
+# Configure AWS: add **AWS_DEPLOY_ROLE_ARN** as a repository *Variable* (Settings → Secrets and
+# variables → Actions → Variables) **or** *Secret* with the IAM role ARN from unicare_zone
+# `infra/github-actions` output `github_actions_ecr_role_arn`.
+#
+# The trust policy allows `repo:<github_org>/<github_repo>:*` — must match this repo (e.g. alonzojoe/chat-api).
 
 name: Test and push to ECR
 
@@ -7,6 +10,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
+# Required for OIDC (GitHub → AWS). Without `id-token: write`, credential loading fails.
+permissions:
+  id-token: write
+  contents: read
 
 env:
   AWS_REGION: il-central-1
@@ -31,18 +39,28 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
+      - name: Resolve deploy role ARN
+        id: role
+        env:
+          FROM_VAR: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          FROM_SECRET: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+        run: |
+          ARN="${FROM_VAR:-$FROM_SECRET}"
+          if [ -z "$ARN" ]; then
+            echo "::error::Set repository Variable or Secret AWS_DEPLOY_ROLE_ARN to the IAM role ARN (Terraform output github_actions_ecr_role_arn). See workflow header comment."
+            exit 1
+          fi
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ steps.role.outputs.arn }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Login to Amazon ECR
         id: login-ecr
