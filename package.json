@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Prototype 1:1 appointment chat API (Express + MongoDB + Socket.IO)",
   "scripts": {
+    "test": "node --test",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed:mongo": "node scripts/seed-mongo.js",
@@ -21,6 +22,7 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
   }
 }
