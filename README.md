@@ -9,7 +9,7 @@ Prototype 1:1 **conversation chat** (client ↔ therapist) with **files**.
 
 ## Production (Unicare / AWS App Runner)
 
-Unicare Terraform provisions **Amazon DocumentDB** and stores **`MONGO_URI`** in Secrets Manager; App Runner injects it (with **`MONGO_TLS_CA_FILE`** for TLS). See the **`unicare-zone`** repo (`infra/documentdb`, `infra/chat-api`). CI pushes the image to **ECR** `unicare/chat-api`.
+Unicare Terraform provisions **Amazon DocumentDB** and stores **`MONGO_URI`** in Secrets Manager; App Runner injects it (with **`MONGO_TLS_CA_FILE`** for TLS). See the **`unicare-zone`** repo (`infra/documentdb`, `infra/chat-api`). CI pushes the image to **ECR** `unicare/chat-api` in **`eu-central-1`** (see `deploy-ecr.yml`).
 
 ### GitHub Actions → ECR (OIDC)
 
