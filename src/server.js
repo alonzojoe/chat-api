@@ -17,12 +17,16 @@ registerSockets(io);
 const app = createApp({ io });
 server.on("request", app);
 
-async function start() {
-  await connectDb();
-  server.listen(env.port, () => {
-    console.log(`Chat API listening on http://localhost:${env.port}`);
-    console.log(`Health: http://localhost:${env.port}/health`);
-  });
-}
-
-start();
+// Bind HTTP before Mongo so /health works while DocumentDB connects (App Runner health checks).
+server.listen(env.port, "0.0.0.0", () => {
+  console.log(`Chat API listening on 0.0.0.0:${env.port}`);
+  console.log(`Health: http://0.0.0.0:${env.port}/health`);
+  void (async () => {
+    try {
+      await connectDb();
+    } catch (err) {
+      console.error("[db] connection failed", err);
+      process.exit(1);
+    }
+  })();
+});
